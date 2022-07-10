@@ -63,30 +63,30 @@ def buyBread(user_id):
                 user['bread'] += bread
                 user['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 saveJson()
-                return '本日首次！甜品数*2，买了{}个甜品，你已拥有{}个甜品'.format(bread, user['bread'])
+                return '本日首次！甜点数*2，买了{}个甜点，你已拥有{}个甜点'.format(bread, user['bread'])
             elif status == 2:
                 bread = random.randint(1, 10)
                 user['bread'] += bread
                 user['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 saveJson()
-                return '你已成功购买{}个甜品，你已拥有{}个甜品'.format(bread, user['bread'])
+                return '你已成功购买{}个甜点，你已拥有{}个甜点'.format(bread, user['bread'])
             else:
-                return '还要再等{}分钟才可以买甜品哦'.format(status)
+                return '还要再等{}分钟才可以买甜点哦'.format(status)
 
     # 循环结束仍未匹配视为首次领取
     bread = random.randint(1, 10) * 5
     newUser = {'user_id': user_id, 'bread': bread, 'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     data.append(newUser)
     saveJson()
-    return '首次买甜品！甜品数*5，你已拥有{}个甜品，记得每小时都来一次哦'.format(bread)
+    return '首次买甜品！甜点数*5，你已拥有{}个甜点，记得每小时都来一次哦'.format(bread)
 
 
 def myBread(user_id):
     for user in data:
         if (user['user_id'] == user_id):
-            return '你现在有{}个甜品'.format(user['bread'])
+            return '你现在有{}个甜点'.format(user['bread'])
     # 循环结束仍未匹配视为未买过面包
-    return '你还没有买过甜品哦，发送买甜品试试看吧'
+    return '你还没有买过甜点哦，发送买甜点试试看吧'
 
 
 def eatBread(user_id):
@@ -95,9 +95,9 @@ def eatBread(user_id):
             bread = random.randint(1, 10)
             user['bread'] -= bread
             saveJson()
-            return '吃掉了{}个甜品，你还有{}个甜品\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
+            return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
     # 循环结束仍未匹配视为未买过面包
-    return '你还没有买过甜品哦，发送买甜品试试看吧'
+    return '你还没有买过甜点哦，发送买甜点试试看吧'
 
 
 # 整活功能，数值还要斟酌一下
@@ -116,7 +116,7 @@ def grabBread(host_id, object_id):
             isObjectExist = True
 
     if (isHostExist == False or isObjectExist == False):
-        return '自己或者对方还没有买过甜品哦'
+        return '自己或者对方还没有买过甜点哦'
 
     dice = random.randint(1, 100)
     if (dice > 70):
@@ -127,7 +127,7 @@ def grabBread(host_id, object_id):
             elif (user['user_id'] == object_id):
                 user['bread'] -= bread
         saveJson()
-        return '1D100={}>70，判定成功，抢走了对方{}个甜品'.format(dice, bread)
+        return '1D100={}>70，判定成功，抢走了对方{}个甜点'.format(dice, bread)
     else:
         bread = random.randint(1, 10)
         for user in data:
@@ -136,4 +136,4 @@ def grabBread(host_id, object_id):
             elif (user['user_id'] == object_id):
                 user['bread'] += bread
         saveJson()
-        return '1D100={}<70，判定失败，反而被对方抢走了{}个甜品'.format(dice, bread)
+        return '1D100={}<70，判定失败，反而被对方抢走了{}个甜点'.format(dice, bread)

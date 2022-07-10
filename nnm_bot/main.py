@@ -472,28 +472,28 @@ while True:
                     except:
                         send_msg({'msg_type': 'group', 'number': group, 'msg': 'nnm也还没有看到漫画内容呢~'})
 
-                elif '买甜品' in rev['raw_message']and len(message) == 3:
+                elif '买甜点' in rev['raw_message']and len(message) == 3:
                     user_id = rev['sender']['user_id']
                     responseText = buy_bread.buyBread(user_id)
                     send_msg({'msg_type': 'group', 'number': group,
                                   'msg': '[CQ:at,qq={}] {}'
                                  .format(user_id, responseText)})
 
-                elif '查甜品' in rev['raw_message']and len(message) == 3:
+                elif '查甜点' in rev['raw_message']and len(message) == 3:
                     user_id = rev['sender']['user_id']
                     responseText = buy_bread.myBread(user_id)
                     send_msg({'msg_type': 'group', 'number': group,
                                   'msg': '[CQ:at,qq={}] {}'
                                  .format(user_id, responseText)})
 
-                elif '吃甜品' in rev['raw_message']and len(message) == 3:
+                elif '吃甜点' in rev['raw_message']and len(message) == 3:
                     user_id = rev['sender']['user_id']
                     responseText = buy_bread.eatBread(user_id)
                     send_msg({'msg_type': 'group', 'number': group,
                                   'msg': '[CQ:at,qq={}] {}'
                                  .format(user_id, responseText)})
 
-                elif rev['raw_message'].startswith('抢甜品'):
+                elif rev['raw_message'].startswith('抢甜点'):
                     user_id = rev['sender']['user_id']
                     # 正则表达式，匹配CQ:at,qq=开头的数字
                     # 当然如果有人手动发送那就没办法了，暂时先这样
