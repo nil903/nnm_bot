@@ -4,6 +4,8 @@ import socket
 import random
 from bs4 import BeautifulSoup
 import requests,os,json,base64
+from module.buy_bread import buy_bread
+import re
 
 qq_robot=eval(input('请输入机器人QQ号：'))
 headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
@@ -102,7 +104,11 @@ while True:
 
 
             elif "[CQ:at,qq={}]".format(qq_robot) in rev["raw_message"]:
-                message = rev['raw_message'].split(' ')[1]
+                try:
+                    # 如果单独@，不追加任何消息，会触发list index out of range
+                    message = rev['raw_message'].split(' ')[1]
+                except:
+                    continue
 
                 if '买面包' in rev['raw_message'] and len(message) == 3:
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '买面包'})
@@ -465,6 +471,46 @@ while True:
                                   'msg': '[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/{}.jpg]'.format(i)})
                     except:
                         send_msg({'msg_type': 'group', 'number': group, 'msg': 'nnm也还没有看到漫画内容呢~'})
+
+                elif '买甜品' in rev['raw_message']and len(message) == 3:
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.buyBread(user_id)
+                    send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}'
+                                 .format(user_id, responseText)})
+
+                elif '查甜品' in rev['raw_message']and len(message) == 3:
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.myBread(user_id)
+                    send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}'
+                                 .format(user_id, responseText)})
+
+                elif '吃甜品' in rev['raw_message']and len(message) == 3:
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.eatBread(user_id)
+                    send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}'
+                                 .format(user_id, responseText)})
+
+                elif rev['raw_message'].startswith('抢甜品'):
+                    user_id = rev['sender']['user_id']
+                    # 正则表达式，匹配CQ:at,qq=开头的数字
+                    # 当然如果有人手动发送那就没办法了，暂时先这样
+                    object_id= re.search('(?<=CQ:at,qq=)\d+\.?\d*', rev['raw_message'])
+
+                    if(object_id is None):
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] 需要@一个群友哦'
+                                 .format(user_id)})
+                    else:
+                        # 用group()获取匹配到的第一个对象，从str转换为int
+                        object_id = int(object_id.group())
+                        responseText = buy_bread.grabBread(user_id, object_id)
+                        send_msg({'msg_type': 'group', 'number': group,
+                                    'msg': '[CQ:at,qq={}] {}'
+                                    .format(user_id, responseText)})
+
         else:
             continue
     else:

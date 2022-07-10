@@ -5,9 +5,7 @@ ListenSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ListenSocket.bind(('127.0.0.1', 5701))
 ListenSocket.listen(100)
 
-HttpResponseHeader = '''HTTP/1.1 200 OK
-Content-Type: text/html
-'''
+HttpResponseHeader = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'
 
 def request_to_json(msg):
     for i in range(len(msg)):
