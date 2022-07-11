@@ -12,7 +12,8 @@
 
 本项目依赖无头QQ客户端[go-cqhttp](https://github.com/Mrs4s/go-cqhttp)：
 1. 运行go-cqhttp，配置文件的`servers:`部分更换成仓库内的版本
-2. 运行`nnm_bot/main.py`
+2. 安装依赖`pip install -r requirements.txt`
+3. 运行`nnm_bot/main.py`
 
 # 实现功能
 
