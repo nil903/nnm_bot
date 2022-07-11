@@ -1,5 +1,4 @@
-
-from receive import rev_msg
+from util import receiver
 import socket
 import random
 from bs4 import BeautifulSoup
@@ -75,7 +74,7 @@ id_list=[]
 while True:
     qq_list = []
     try:
-        rev = rev_msg()
+        rev = receiver.rev_msg()
         id = rev['message_id']
         if (len(id_list) >= 50):
             id_list = []
