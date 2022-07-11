@@ -21,4 +21,3 @@ def rev_msg():# json or None
     Client.sendall((HttpResponseHeader).encode(encoding='utf-8'))
     Client.close()
     return rev_json
-
