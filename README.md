@@ -13,3 +13,12 @@
 本项目依赖无头QQ客户端[go-cqhttp](https://github.com/Mrs4s/go-cqhttp)：
 1. 运行go-cqhttp，配置文件的`servers:`部分更换成仓库内的版本
 2. 运行`nnm_bot/main.py`
+
+# 实现功能
+
+- [x] 群内关键词响应
+- [x] Bangdream图片发送
+- [x] 四格漫画发送
+- [x] 买甜品
+- [ ] 花名册
+- [ ] 抽牌
