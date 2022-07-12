@@ -1,8 +1,12 @@
 import re
-# 所有message都会被去掉开头和结尾的空格!
+
+# 用于消息处理，定义了几个常用的字符串处理过程
+# 配合对应的trigger判断后可以快速提取想要的文本
+# 输入参数类型和返回值类型详见标注 
+# 所有未处理的message都会被去掉开头和结尾的空格再进行处理
 
 # 获得关键字开头之后的语句
-# 务必结合on_prefix使用，否则值可能不对
+# 务必先用on_prefix判断，否则值可能不对
 def get_prefix(msg : str, keyword : str) -> str:
     try:
         msg = msg.strip()
@@ -13,7 +17,7 @@ def get_prefix(msg : str, keyword : str) -> str:
         print('get_prefix error:' + str(e))
 
 # 获得关键字结尾之前的语句
-# 务必结合on_suffix使用，否则值可能不对
+# 务必先用on_suffix判断，否则值可能不对
 def get_suffix(msg : str, keyword : str) -> str:
     try:
         msg = msg.strip()
@@ -24,7 +28,7 @@ def get_suffix(msg : str, keyword : str) -> str:
         print('get_suffix error:' + str(e))
 
 # 获得@Bot开头之后的语句
-# 务必结合on_atbot_prefix使用，否则值可能不对
+# 务必先用on_atbot_prefix判断，否则值可能不对
 def get_atbot_prefix(msg : str, bot_id: int | str) -> str:
     try:
         msg = msg.strip()

@@ -1,7 +1,7 @@
 from util.receiver import rev_msg
+from util.sender import *
 from util.trigger import *
 from util.parser import *
-import socket
 import random
 from bs4 import BeautifulSoup
 import requests, os
@@ -12,33 +12,6 @@ import re
 qq_robot=eval(input('请输入机器人QQ号：'))
 headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
 }
-
-
-
-def send_msg(resp_dict):
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ip = '127.0.0.1'
-    client.connect((ip, 5700))
-    msg_type = resp_dict['msg_type']
-    number = resp_dict['number']
-    msg = resp_dict['msg']
-    # 将字符中的特殊字符进行url编码
-    # 必须先处理百分号，不然后面的编码会乱套
-    msg = msg.replace("%", "%25")
-    msg = msg.replace(" ", "%20")
-    msg = msg.replace("\n", "%0a")
-
-    if msg_type == 'group':
-        payload = "GET /send_group_msg?group_id=" + str(
-            number) + "&message=" + msg + " HTTP/1.1\r\nHost:" + ip + ":5700\r\nConnection: close\r\n\r\n"
-    elif msg_type == 'private':
-        payload = "GET /send_private_msg?user_id=" + str(
-            number) + "&message=" + msg + " HTTP/1.1\r\nHost:" + ip + ":5700\r\nConnection: close\r\n\r\n"
-
-    print("发送" + payload)
-    client.send(payload.encode("utf-8"))
-    client.close()
-    return 0
 
 img_list1 = []
 img_list2 = []
@@ -98,14 +71,20 @@ while True:
             qq = rev['sender']['user_id']
 
         elif rev["message_type"] == "group":
+            # 提前定义好，后面直接用，无须重复获取
+            # 群号：int
             group = rev['group_id']
+            # 发送者QQ号：int
+            user_id = rev['sender']['user_id']
+            # 消息：str
+            message = rev['raw_message']
+
             if "[CQ:reply" in rev["raw_message"] and "[CQ:at,qq={}]".format(qq_robot) in rev["raw_message"]:
                 message = rev['raw_message']
                 i = random.randint(42, 48)
                 send_msg({'msg_type': 'group', 'number': group,
                           'msg': '[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/q{}.png]'.format(
                               i)})
-
 
             elif "[CQ:at,qq={}]".format(qq_robot) in rev["raw_message"]:
                 try:
@@ -234,7 +213,7 @@ while True:
                              .format(qq,face,height,ds,color,hair,cup,color,char,identity)})
 
             else:
-                message = rev['raw_message']
+
                 if '来点wlp' in rev['raw_message'] and len(message) == 5:
                     send_msg({'msg_type': 'group', 'number': group, 'msg': 'nnm也很喜欢哟'})
 
@@ -610,17 +589,12 @@ while True:
                         send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
 
                 elif on_suffix(message, '是谁'):
-                    user_id = rev['sender']['user_id']
                     name = get_suffix(message, '是谁')
                     index, responseText = nickname.search(name)
                     # 写成相对路径
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'character', '{}.png'.format(index))
-                    try:
-                        send_msg({'msg_type': 'group', 'number': group,
-                                  'msg': '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'
-                                  .format(user_id, responseText, path)})
-                    except Exception as e:
-                        print('nickname error:' + str(e))    
+                    msg = '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'.format(user_id, responseText, path)
+                    send_group(group, msg)
 
         else:
             continue
