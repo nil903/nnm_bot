@@ -1,9 +1,8 @@
-
-from receive import rev_msg
+from util.receiver import rev_msg
 import socket
 import random
 from bs4 import BeautifulSoup
-import requests,os,json,base64
+import requests
 from module.buy_bread import buy_bread
 import re
 
