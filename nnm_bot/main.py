@@ -23,6 +23,8 @@ def send_msg(resp_dict):
     number = resp_dict['number']
     msg = resp_dict['msg']
     # 将字符中的特殊字符进行url编码
+    # 必须先处理百分号，不然后面的编码会乱套
+    msg = msg.replace("%", "%25")
     msg = msg.replace(" ", "%20")
     msg = msg.replace("\n", "%0a")
 
