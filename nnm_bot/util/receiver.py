@@ -1,6 +1,8 @@
 import socket
 import json
 
+# 用于接收消息，main.py将循环执行rev_msg函数
+
 ListenSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ListenSocket.bind(('127.0.0.1', 5701))
 ListenSocket.listen(100)
