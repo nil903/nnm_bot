@@ -1,9 +1,12 @@
 from util.receiver import rev_msg
+from util.trigger import *
+from util.parser import *
 import socket
 import random
 from bs4 import BeautifulSoup
-import requests
+import requests, os
 from module.buy_bread import buy_bread
+from module.nickname import nickname
 import re
 
 qq_robot=eval(input('请输入机器人QQ号：'))
@@ -604,6 +607,18 @@ while True:
                     else:
                         send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
 
+                elif on_suffix(message, '是谁'):
+                    user_id = rev['sender']['user_id']
+                    name = get_suffix(message, '是谁')
+                    index, responseText = nickname.search(name)
+                    # 写成相对路径
+                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'character', '{}.png'.format(index))
+                    try:
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'
+                                  .format(user_id, responseText, path)})
+                    except Exception as e:
+                        print('nickname error:' + str(e))    
 
         else:
             continue
