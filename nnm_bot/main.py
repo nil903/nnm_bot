@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import requests, os
 from module.buy_bread import buy_bread
 from module.nickname import nickname
+from module.cv_nickname import cv_nickname
 import re
 
 qq_robot=eval(input('请输入机器人QQ号：'))
@@ -595,6 +596,24 @@ while True:
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'character', '{}.png'.format(index))
                     msg = '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'.format(user_id, responseText, path)
                     send_group(group, msg)
+
+                # 这一块结合module/cv_nickname，就可以替代繁杂的判断
+                # cv_nickname返回一个角色编号index，支持模糊查询
+                # 之后只需要维护那个json，以及放入对应编号的人物图片就好了
+                
+                # elif on_prefix(message, '来点'):
+                #     name = get_prefix(message, '来点')
+                #     index, guessText = cv_nickname.search(name)
+                #     print(index, guessText)
+                #     responseText = guessText + buy_bread.eatBreadImage(user_id)
+                #     text = '吃掉了'
+                #     if text in responseText:
+                #         # 此处需要修改路径，修改图片编号
+                #         msg = '[CQ:at,qq={}] {}\n[CQ:image,file={}.jpg]'.format(user_id, responseText, index)
+                #         send_group(group, msg)
+                #     else:
+                #         msg = '[CQ:at,qq={}] {}'.format(user_id, responseText)
+                #         send_group(group, msg)
 
         else:
             continue
