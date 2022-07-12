@@ -92,21 +92,34 @@ def myBread(user_id):
 def eatBread(user_id):
     for user in data:
         if (user['user_id'] == user_id):
-            bread = random.randint(1, 10)
-            user['bread'] -= bread
-            saveJson()
-            return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
+            if user['bread'] <= 0:
+                if user['bread'] == 0:
+                    return '你没有甜点可以吃哦'
+                else:
+                    sell = abs(user['bread'])
+                    return '不可以吃霸王餐哦,你还要帮七深刷{}个盘子才可以吃甜点'.format(sell)
+            else:
+                bread = random.randint(1, 10)
+                if bread <= user['bread']:
+                    user['bread'] -= bread
+                    saveJson()
+                    return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
+                else:
+                    bread = user['bread']
+                    user['bread'] == 0
+                    saveJson()
+                    return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
     # 循环结束仍未匹配视为未买过面包
-    return '你还没有买过甜点哦，发送买甜点试试看吧'
+        return '你还没有买过甜点哦，发送买甜点试试看吧'
 
 def eatBreadImage(user_id):
     for user in data:
         if (user['user_id'] == user_id):
             if user['bread'] < 5:
                 sell = abs(user['bread'] - 5)
-                return '要5份甜点才可以看热水酱,你还要帮七深卖出{}份甜点哦'.format(sell)
+                return '甜点不足,你还要帮七深卖出{}份甜点哦'.format(sell)
             else:
-                bread = 5
+                bread = random.randint(1, 5)
                 user['bread'] -= bread
                 saveJson()
                 return '吃掉了{}个甜点，你还有{}个甜点'.format(bread, user['bread'])
@@ -193,5 +206,5 @@ def grabBread(host_id, object_id):
                     elif (user['user_id'] == object_id):
                         user['bread'] += bread
                 saveJson()
-        return '1D100={}<50，判定失败，被对方抢走{}个甜点'.format(dice, bread)
+        return '1D100={}<=50，判定失败，被对方抢走{}个甜点'.format(dice, bread)
 
