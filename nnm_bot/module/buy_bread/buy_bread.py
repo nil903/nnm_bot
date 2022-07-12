@@ -113,6 +113,17 @@ def eatBreadImage(user_id):
     # 循环结束仍未匹配视为未买过面包
     return '你还没有买过甜点哦，发送买甜点试试看吧'
 
+def spendBread(user_id, amount):
+    for user in data:
+        if (user['user_id'] == user_id):
+            if(user['bread'] >= amount):
+                user['bread'] -= amount
+                saveJson()
+                return 0
+            else:
+                return 1
+    # 循环结束仍未匹配视为失败
+    return 2
 
 # 整活功能，数值还要斟酌一下
 def grabBread(host_id, object_id):
