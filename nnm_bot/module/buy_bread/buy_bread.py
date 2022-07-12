@@ -99,6 +99,20 @@ def eatBread(user_id):
     # 循环结束仍未匹配视为未买过面包
     return '你还没有买过甜点哦，发送买甜点试试看吧'
 
+def eatBreadImage(user_id):
+    for user in data:
+        if (user['user_id'] == user_id):
+            if user['bread'] < 5:
+                sell = abs(user['bread'] - 5)
+                return '要5份甜点才可以看热水酱,你还要帮七深卖出{}份甜点哦'.format(sell)
+            else:
+                bread = 5
+                user['bread'] -= bread
+                saveJson()
+                return '吃掉了{}个甜点，你还有{}个甜点'.format(bread, user['bread'])
+    # 循环结束仍未匹配视为未买过面包
+    return '你还没有买过甜点哦，发送买甜点试试看吧'
+
 
 # 整活功能，数值还要斟酌一下
 def grabBread(host_id, object_id):
@@ -119,21 +133,54 @@ def grabBread(host_id, object_id):
         return '自己或者对方还没有买过甜点哦'
 
     dice = random.randint(1, 100)
-    if (dice > 70):
+    if (dice > 50):
         bread = random.randint(1, 10)
         for user in data:
             if (user['user_id'] == host_id):
-                user['bread'] += bread
-            elif (user['user_id'] == object_id):
-                user['bread'] -= bread
-        saveJson()
-        return '1D100={}>70，判定成功，抢走了对方{}个甜点'.format(dice, bread)
+                if user['bread'] < 0:
+                    sell = abs(user['bread'])
+                    return '你还要帮七深卖出{}份甜品才可以抢甜品哦'.format(sell)
+                else:
+                    if (user['user_id'] == host_id):
+                        user['bread'] += bread
+                    elif (user['user_id'] == object_id):
+                        user['bread'] -= bread
+                saveJson()
+
+            if (user['user_id'] == object_id):
+                if user['bread'] < 0:
+                    sell = abs(user['bread'])
+                    return '他还要帮七深打工还债卖出{}份甜品才可以抢甜品哦'.format(sell)
+                else:
+                    if (user['user_id'] == host_id):
+                        user['bread'] += bread
+                    elif (user['user_id'] == object_id):
+                        user['bread'] -= bread
+                saveJson()
+        return '1D100={}>50，判定成功，抢走了对方{}个甜点'.format(dice, bread)
     else:
         bread = random.randint(1, 10)
         for user in data:
             if (user['user_id'] == host_id):
-                user['bread'] -= bread
-            elif (user['user_id'] == object_id):
-                user['bread'] += bread
-        saveJson()
-        return '1D100={}<70，判定失败，反而被对方抢走了{}个甜点'.format(dice, bread)
+                if user['bread'] < 0:
+                    sell = abs(user['bread'])
+                    return '你还要帮七深卖出{}份甜品才可以抢甜品哦'.format(sell)
+                else:
+                    if (user['user_id'] == host_id):
+                        user['bread'] -= bread
+                    elif (user['user_id'] == object_id):
+                        user['bread'] += bread
+                saveJson()
+
+            if (user['user_id'] == object_id):
+                if user['bread'] < 0:
+                    sell = abs(user['bread'])
+                    return '他还要帮七深打工还债卖出{}份甜品才可以抢甜品哦'.format(sell)
+                else:
+                    if (user['user_id'] == host_id):
+                        user['bread'] -= bread
+                    elif (user['user_id'] == object_id):
+                        user['bread'] += bread
+                saveJson()
+        return '1D100={}<50，判定失败，被对方抢走{}个甜点'.format(dice, bread)
+

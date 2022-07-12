@@ -114,7 +114,12 @@ while True:
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '买面包'})
 
                 elif 'help' in rev['raw_message']and len(message) == 4 or '使用说明' in rev['raw_message']and len(message) == 4:
-                        send_msg({'msg_type': 'group', 'number': group, 'msg': '七深觉得自己探索才比较普通哦'})
+                        send_msg({'msg_type': 'group', 'number': group, 'msg': 'morfonica: \n\n'
+                                                                               ' 真白： 天音 妹妹 進藤天音 进藤天音 音宝 amane\n\n'
+                                                                               ' 七深： 热水酱 西尾夕香 yuuka oyu oyu酱 热水 西尾 夕香\n\n'
+                                                                               ' 瑠唯： 島村絢沙 小提琴ayasa 绚沙 岛村绚沙\n'
+                                                                               ' 筑紫： mika みか\n\n'
+                                                                               ' 透子： 直田姬奈 姬奈\n'})
 
                 elif 'nnm' in rev['raw_message'] and len(message) == 3:
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '找七深有什么事吗'})
@@ -299,7 +304,12 @@ while True:
                         send_msg({'msg_type': 'group', 'number': group, 'msg': '晚安！做个好梦!'})
 
                 elif 'help' in rev['raw_message']and len(message) == 4 or '使用说明' in rev['raw_message']and len(message) == 4:
-                        send_msg({'msg_type': 'group', 'number': group, 'msg': '七深觉得自己探索才比较普通哦'})
+                    send_msg({'msg_type': 'group', 'number': group, 'msg': 'morfonica: \n\n'
+                                                                           ' 真白： 天音 妹妹 進藤天音 进藤天音 音宝 amane\n\n'
+                                                                           ' 七深： 热水酱 西尾夕香 yuuka oyu oyu酱 热水 西尾 夕香\n\n'
+                                                                           ' 瑠唯： 島村絢沙 小提琴ayasa 绚沙 岛村绚沙\n'
+                                                                           ' 筑紫： mika みか\n\n'
+                                                                           ' 透子： 直田姬奈 姬奈\n'})
 
                 elif 'nnm决定' in rev['raw_message']:
                     qq = rev['sender']['user_id']
@@ -337,12 +347,7 @@ while True:
                     identity = type6[r]
                     type7 = ['浅', '深']
                     ds = type7[k]
-                    if qq == 2824802260: #摩卡专属订制
-                        send_msg({'msg_type': 'group', 'number': group,
-                                  'msg': '[CQ:at,qq={}] 二次元的你,长着圆脸,身高160，深绿色长发，Acup, 瞳色粉色,三无属性, 是笨蛋'
-                                 .format(qq)})
-                    else:
-                        send_msg({'msg_type': 'group', 'number': group, 'msg': '[CQ:at,qq={}] 二次元的你,长着{},身高{}，{}{}{}，{}cup, 瞳色{}色,{}属性, 是{}'
+                    send_msg({'msg_type': 'group', 'number': group, 'msg': '[CQ:at,qq={}] 二次元的你,长着{},身高{}，{}{}{}，{}cup, 瞳色{}色,{}属性, 是{}'
                              .format(qq, face, height, ds, color, hair, cup, eye, char, identity)})
 
 
@@ -510,6 +515,96 @@ while True:
                         send_msg({'msg_type': 'group', 'number': group,
                                     'msg': '[CQ:at,qq={}] {}'
                                     .format(user_id, responseText)})
+
+
+
+                elif rev['raw_message'].startswith('透'):
+                    user_id = rev['sender']['user_id']
+                    object_id= re.search('(?<=CQ:at,qq=)\d+\.?\d*', rev['raw_message'])
+                    if (object_id is None):
+                        continue
+
+                    elif "[CQ:at,qq={}]".format(int(object_id.group())) in rev["raw_message"]:
+                        # 用group()获取匹配到的第一个对象，从str转换为int
+                        object_id = int(object_id.group())
+                        user_id = rev['sender']['nickname']
+                        send_msg({'msg_type': 'group', 'number': group,
+                                'msg': '{}透了[CQ:at,qq={}]'
+                                    .format(user_id, object_id)})
+
+                elif ('来点热水酱' in rev['raw_message']and len(message) == 5) or\
+                        ('来点西尾夕香' in rev['raw_message']and len(message) == 6)or\
+                        ('来点yuuka' in rev['raw_message']and len(message) == 7) or\
+                        ('来点oyu' in rev['raw_message']and len(message) == 5) or\
+                        ('来点oyu酱' in rev['raw_message']and len(message) == 6) or\
+                        ('来点热水' in rev['raw_message']and len(message) == 4) or\
+                        ('来点西尾' in rev['raw_message']and len(message) == 4)or\
+                        ('来点夕香' in rev['raw_message']and len(message) == 4):
+                    i = random.randint(10001, 10258)
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.eatBreadImage(user_id)
+                    text = '吃掉了'
+                    if text in responseText:
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/yuuka/{}.jpg]'.format(user_id, responseText, i)})
+                    else:
+                        send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
+
+                elif ('来点天音' in rev['raw_message']and len(message) == 4) or\
+                        ('来点妹妹' in rev['raw_message']and len(message) == 4)or\
+                        ('来点進藤天音' in rev['raw_message']and len(message) == 6) or\
+                        ('来点进藤天音' in rev['raw_message']and len(message) == 6) or \
+                        ('来点音宝' in rev['raw_message'] and len(message) == 4) or \
+                        ('来点amane' in rev['raw_message']and len(message) == 7):
+                    i = random.randint(10001, 10080)
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.eatBreadImage(user_id)
+                    text = '吃掉了'
+                    if text in responseText:
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/msr/{}.jpg]'.format(user_id, responseText, i)})
+                    else:
+                        send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
+
+                elif ('来点mika' in rev['raw_message']and len(message) == 6) or\
+                        ('来点みか' in rev['raw_message']and len(message) == 4):
+                    i = random.randint(10001, 10024)
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.eatBreadImage(user_id)
+                    text = '吃掉了'
+                    if text in responseText:
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/mika/{}.jpg]'.format(user_id, responseText, i)})
+                    else:
+                        send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
+
+                elif ('来点島村絢沙' in rev['raw_message']and len(message) == 6) or \
+                        ('来点小提琴ayasa' in rev['raw_message'] and len(message) == 10) or \
+                        ('来点绚沙' in rev['raw_message'] and len(message) == 4) or \
+                        ('来点絢沙' in rev['raw_message'] and len(message) == 4) or \
+                        ('来点岛村绚沙' in rev['raw_message']and len(message) == 6):
+                    i = random.randint(10001, 10098)
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.eatBreadImage(user_id)
+                    text = '吃掉了'
+                    if text in responseText:
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/ayasa/{}.jpg]'.format(user_id, responseText, i)})
+                    else:
+                        send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
+
+                elif ('来点直田姬奈' in rev['raw_message']and len(message) == 6) or\
+                        ('来点姬奈' in rev['raw_message'] and len(message) == 4):
+                    i = random.randint(10001, 10065)
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.eatBreadImage(user_id)
+                    text = '吃掉了'
+                    if text in responseText:
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '[CQ:at,qq={}] {}[CQ:image,file=file:///C:/Users/yudong/Documents/study/cse2231/workspace/nnm_bot/public/toko/{}.jpg]'.format(user_id, responseText, i)})
+                    else:
+                        send_msg({'msg_type': 'group', 'number': group,'msg': '[CQ:at,qq={}] {}'.format(user_id, responseText)})
+
 
         else:
             continue
