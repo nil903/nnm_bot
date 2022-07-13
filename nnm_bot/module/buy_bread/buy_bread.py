@@ -110,7 +110,7 @@ def eatBread(user_id):
                     saveJson()
                     return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
     # 循环结束仍未匹配视为未买过面包
-        return '你还没有买过甜点哦，发送买甜点试试看吧'
+    return '你还没有买过甜点哦，发送买甜点试试看吧'
 
 def eatBreadImage(user_id):
     for user in data:
