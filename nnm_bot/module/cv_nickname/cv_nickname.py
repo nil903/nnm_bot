@@ -31,12 +31,13 @@ def insert():
 insert()
 
 # 直接匹配，返回序号
-def get_index(name):
+def get_name(name):
     if name in processed_data:
-        index =  processed_data[name]
-        return index
+        index = processed_data[name]
+        result = data[index][0]
+        return index, result
     else:
-        return None
+        return None, None
 
 # 用fuzzywuzzy库模糊匹配最佳项，同时返回匹配率
 def guess_name(name):
@@ -45,9 +46,10 @@ def guess_name(name):
     return guess, score, index
 
 def search(name):
-    index = get_index(name)
+    index, result = get_name(name)
     if index is not None:
-        return index, ''
+        return index, '是{}哦'.format(result)
     else:
         guess, score, index = guess_name(name)
-        return index, '没有找到{}，你有{}%的可能在找{}\n'.format(name, score, guess)
+        result = data[index][0]
+        return index, '没有找到{}，你有{}%的可能在找{}, 她是{}\n'.format(name, score, guess,result)

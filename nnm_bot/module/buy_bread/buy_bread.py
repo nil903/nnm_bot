@@ -88,6 +88,16 @@ def myBread(user_id):
     # 循环结束仍未匹配视为未买过面包
     return '你还没有买过甜点哦，发送买甜点试试看吧'
 
+def BreadChallenge(user_id, num):
+    for user in data:
+        if (user['user_id'] == user_id):
+
+            bread = num
+            user['bread'] += bread
+            saveJson()
+            return '获得了{}个甜点，你还有{}个甜点'.format(bread, user['bread'])
+        # 循环结束仍未匹配视为未买过面包
+    return '你还没有买过甜点哦，发送买甜点试试看吧'
 
 def eatBread(user_id):
     for user in data:
@@ -106,7 +116,7 @@ def eatBread(user_id):
                     return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
                 else:
                     bread = user['bread']
-                    user['bread'] == 0
+                    user['bread'] -= bread
                     saveJson()
                     return '吃掉了{}个甜点，你还有{}个甜点\n诶？你问nnm有什么用吗，nnm也不知道哦'.format(bread, user['bread'])
     # 循环结束仍未匹配视为未买过面包
@@ -207,4 +217,3 @@ def grabBread(host_id, object_id):
                         user['bread'] += bread
                 saveJson()
         return '1D100={}<=50，判定失败，被对方抢走{}个甜点'.format(dice, bread)
-

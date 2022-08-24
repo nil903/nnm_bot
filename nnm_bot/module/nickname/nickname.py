@@ -41,6 +41,13 @@ def get_name(name):
     else:
         return None, None
 
+def get_Onlyname(name):
+    if name in processed_data:
+        index =  processed_data[name]
+        result = data[index][0]
+        return result
+    else:
+        return None
 # 用fuzzywuzzy库模糊匹配最佳项，同时返回匹配率
 def guess_name(name):
     guess, score = process.extractOne(name, processed_data.keys())
