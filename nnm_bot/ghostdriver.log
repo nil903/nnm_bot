@@ -1,0 +1,18 @@
+[INFO  - 2022-10-12T17:57:54.846Z] GhostDriver - Main - running on port 59615
+[INFO  - 2022-10-12T17:57:55.490Z] Session [6627fbe0-4a57-11ed-817c-63be4dadef5c] - page.settings - {"XSSAuditingEnabled":false,"javascriptCanCloseWindows":true,"javascriptCanOpenWindows":true,"javascriptEnabled":true,"loadImages":true,"localToRemoteUrlAccessEnabled":false,"userAgent":"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/538.1 (KHTML, like Gecko) PhantomJS/2.1.1 Safari/538.1","webSecurityEnabled":true}
+[INFO  - 2022-10-12T17:57:55.490Z] Session [6627fbe0-4a57-11ed-817c-63be4dadef5c] - page.customHeaders:  - {}
+[INFO  - 2022-10-12T17:57:55.490Z] Session [6627fbe0-4a57-11ed-817c-63be4dadef5c] - Session.negotiatedCapabilities - {"browserName":"phantomjs","version":"2.1.1","driverName":"ghostdriver","driverVersion":"1.2.0","platform":"windows-8.1-32bit","javascriptEnabled":true,"takesScreenshot":true,"handlesAlerts":false,"databaseEnabled":false,"locationContextEnabled":false,"applicationCacheEnabled":false,"browserConnectionEnabled":false,"cssSelectorsEnabled":true,"webStorageEnabled":false,"rotatable":false,"acceptSslCerts":false,"nativeEvents":true,"proxy":{"proxyType":"direct"}}
+[INFO  - 2022-10-12T17:57:55.490Z] SessionManagerReqHand - _postNewSessionCommand - New Session Created: 6627fbe0-4a57-11ed-817c-63be4dadef5c
+[ERROR - 2022-10-12T17:57:55.942Z] Session [6627fbe0-4a57-11ed-817c-63be4dadef5c] - page.onError - msg: ReferenceError: Can't find variable: Set
+
+  phantomjs://platform/console++.js:263 in error
+[ERROR - 2022-10-12T17:57:55.942Z] Session [6627fbe0-4a57-11ed-817c-63be4dadef5c] - page.onError - stack:
+  (anonymous function) (https://static.cloudflareinsights.com/beacon.min.js/v652eace1692a40cfa3763df669d7439c1639079717194:1)
+  t (https://static.cloudflareinsights.com/beacon.min.js/v652eace1692a40cfa3763df669d7439c1639079717194:1)
+  (anonymous function) (https://static.cloudflareinsights.com/beacon.min.js/v652eace1692a40cfa3763df669d7439c1639079717194:1)
+  t (https://static.cloudflareinsights.com/beacon.min.js/v652eace1692a40cfa3763df669d7439c1639079717194:1)
+  (anonymous function) (https://static.cloudflareinsights.com/beacon.min.js/v652eace1692a40cfa3763df669d7439c1639079717194:1)
+
+  phantomjs://platform/console++.js:263 in error
+[INFO  - 2022-10-12T18:02:54.850Z] SessionManagerReqHand - _cleanupWindowlessSessions - Asynchronous Sessions clean-up phase starting NOW
+[INFO  - 2022-10-12T18:02:54.850Z] SessionManagerReqHand - _cleanupWindowlessSessions - Deleted Session '6627fbe0-4a57-11ed-817c-63be4dadef5c', because windowless

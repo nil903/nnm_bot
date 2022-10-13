@@ -1,10 +1,23 @@
 import datetime
+import urllib
+from tokenize import String
+
+from selenium import webdriver
+from selenium.webdriver import ActionChains
 import time
+import threading
+from PIL import Image
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webelement import WebElement
+from random import sample, choices
 from module.musicScoreEasy import musicScoreEasy
 from module.musicScoreHard.musicScoreHardEx import musicScoreHardEx
 from module.musicScoreHard.musicScoreHardSp import musicScoreHardSp
 from module.musicScoreNormal.musicScoreNormalEx import musicScoreNormalEx
 from module.musicScoreNormal.musicScoreNormalSp import musicScoreNormalSp
+from module.searchPlayer import searchPlayer
+from module.searchPlayerJP import searchPlayerJP
 from util.receiver import rev_msg
 from util.sender import *
 from util.trigger import *
@@ -18,14 +31,367 @@ from module.musicScore import musicScore
 from module.musicScoreSp import musicScoreSp
 from module.cv_nickname import cv_nickname
 import re
+import wenxin_api
+from wenxin_api.tasks.text_to_image import TextToImage
+
 
 qq_robot = eval(input('请输入机器人QQ号：'))
 headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
 }
+def autoPaint(key): #这部分可以不用管 我看有大佬用Google drive白嫖colab的gpu算力 等研究完就可以鲨了百度ai
+    try:
+        if(len(key) != ''):
+            text =''
+            if key.count(' ') > 0:
+                str_list = key.split(sep=' ')
+                for i in str_list:
+                    text = text + " " + i
+            else:
+                text = key
+            print(text)
+            wenxin_api.ak = "p2SXf6evTXRlsttWBq55skphDyTuFZw4"
+            wenxin_api.sk = "1BQz1AcEVoZVb3m1BGXCbFourYDKOad6"
+            input_dict = {
+                "text": text,
+                "style": "二次元"
+            }
+            rst = TextToImage.create(**input_dict)
+            list = rst.get('imgUrls')
+            return list[0]
+    except:
+        return '请求重试，连接错误(再发一次就行，偶尔会有这种情况，如果一直显示错误只能换个时间尝试了，百度ai背大锅)'
+
+
+def transparencewhite2(img):
+    sp = img.size
+    width = sp[0]
+    height = sp[1]
+    print(sp)
+    for yh in range(height):
+        for xw in range(width):
+            dot = (xw, yh)
+            color_d = img.getpixel(dot)
+            if (color_d[0] == 0 and color_d[1]== 0 and color_d[2]== 0):
+                color_d = (255, 255, 255, 0)
+                img.putpixel(dot, color_d)
+    return img
+
+def transparent(img):
+    sp = img.size
+    width = sp[0]
+    height = sp[1]
+    print(sp)
+    for yh in range(height):
+        for xw in range(width):
+            dot = (xw, yh)
+            color_d = img.getpixel(dot)
+            if (color_d[0] == 255 and color_d[1]==255 and color_d[2]==255 and color_d[3]==255):
+                color_d = (255, 255, 255, 0)
+                img.putpixel(dot, color_d)
+    return img
+
+
+def Picture_Synthesis(mother_img,
+                      son_img,
+                      save_img,
+                      coordinate=None):
+    M_Img = Image.open(mother_img)
+    S_Img = Image.open(son_img)
+    factor = 1
+
+    M_Img = M_Img.convert("RGBA")
+
+    M_Img_w, M_Img_h = M_Img.size
+    print("母图尺寸：",M_Img.size)
+    S_Img_w, S_Img_h = S_Img.size
+    print("子图尺寸：",S_Img.size)
+
+    size_w = int(S_Img_w / factor)
+    size_h = int(S_Img_h / factor)
+
+    if S_Img_w > size_w:
+        S_Img_w = size_w
+    if S_Img_h > size_h:
+        S_Img_h = size_h
+
+    icon = S_Img.resize((S_Img_w, S_Img_h), Image.Resampling.LANCZOS)
+    w = int((M_Img_w - S_Img_w) / 2)
+    h = int((M_Img_h - S_Img_h) / 2)
+
+    try:
+        if coordinate==None or coordinate=="":
+            coordinate=(w, h)
+            M_Img.paste(icon, coordinate, mask=None)
+        else:
+            M_Img.paste(icon, coordinate, mask=None)
+    except:
+        print("坐标指定出错 ")
+    M_Img.save(save_img)
+
+COL = 5
+ROW = 2
+UNIT_HEIGHT_SIZE = 310
+UNIT_WIDTH_SIZE = 330
+PATH = 'C:/Users/Administrator/Desktop/nnm/imageOnHtml/costume/step/'
+
+NAME = ""
+RANDOM_SELECT = False
+SAVE_QUALITY = 50
+
+def concat_images(image_names, name, path):
+    image_files = []
+    for index in range(COL*ROW):
+        img1 = Image.open('C:/Users/Administrator/Desktop/nnm/nnm_bot/frame.png')
+        img1 = img1.resize((390, 365), Image.Resampling.LANCZOS)
+        img = Image.open(path + image_names[index])
+        img = img.resize((250, 300), Image.Resampling.LANCZOS)
+
+        selected_images = get_image_names('C:/Users/Administrator/Desktop/nnm/imageOnHtml/costume/')
+        Picture_Synthesis(mother_img = 'C:/Users/Administrator/Desktop/nnm/nnm_bot/frame.png',
+                          son_img=('C:/Users/Administrator/Desktop/nnm/imageOnHtml/costume/'+ selected_images[index]),
+                          save_img= 'C:/Users/Administrator/Desktop/nnm/imageOnHtml/costume/step/{}.png'.format(index),
+                          coordinate=None
+                          )
+
+        image_files.append(img)
+    target = Image.new('RGB', (UNIT_WIDTH_SIZE * COL, UNIT_HEIGHT_SIZE * ROW), color = (255, 255, 255))
+    for row in range(ROW):
+        for col in range(COL):
+            target.paste(image_files[COL*row+col], (0 + UNIT_WIDTH_SIZE*col, 0 + UNIT_HEIGHT_SIZE*row))
+    target.save('test.png')
+    img = Image.open('test.png')
+    img = transparencewhite2(img)
+    img.save('test.png')
+
+
+def get_image_names(path):
+    image_names = list(os.walk(path))[0][2]
+    selected_images = choices(image_names, k=COL*ROW) if RANDOM_SELECT else sample(image_names, COL*ROW)
+    return selected_images
+
+
+def language():
+    url = 'https://bestdori.com/profile/preferences'
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    actions = ActionChains(brower)
+    actions.click().perform()
+    coordinate_list = brower.find_elements(By.XPATH, '//span[text()="简"]')
+    for List in coordinate_list:
+        List.click()
+    coordinate_list2 = brower.find_elements(By.XPATH,
+                                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[2]/div/div/div/a[4]')
+    for List in coordinate_list2:
+        List.click()
+    brower.close()
+
+def screen_shot_point(url, png_name, start, target, point, boost):
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    brower.maximize_window()
+    actions = ActionChains(brower)
+    actions.click().perform()
+    coordinate_list = brower.find_elements(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[1]/div[2]/div/div[2]/a')#选择活动
+    for List in coordinate_list:
+        List.click() #选择活动
+    a = 10
+    b = 10
+    c = 10
+    d = 10
+    while (a > 0):
+        brower.find_element(By.XPATH,
+                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[5]/div[2]/div/div/input').send_keys(Keys.BACKSPACE)
+        a -= 1
+    brower.find_element(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[5]/div[2]/div/div/input').send_keys('{}'.format(start))#初始fen
+    while (b > 0):
+        brower.find_element(By.XPATH,
+                             '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[6]/div[2]/div/div/input').send_keys(
+            Keys.BACKSPACE)
+        b -= 1
+    brower.find_element(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[6]/div[2]/div/div/input').send_keys(
+        '{}'.format(target))#mu'biao分
+
+    coordinate_list2 = brower.find_elements(By.XPATH,
+                                           '//*[@id="app"]/div[4]/div[2]/div[1]/div[2]/div/ul/li[2]/a')#切换标签
+    for List in coordinate_list2:
+        List.click()
+    while (c > 0):
+        brower.find_element(By.XPATH,
+                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[1]/div[2]/div/div/input').send_keys(
+            Keys.BACKSPACE)
+        c -= 1
+    brower.find_element(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[1]/div[2]/div/div/input').send_keys(
+        '{}'.format(point))#每把分数
+
+    coordinate_list3 = brower.find_elements(By.XPATH,
+                                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[2]/div/ul/li[3]/a')#切换标签
+    for List in coordinate_list3:
+        List.click()
+
+    coordinate_list4 = brower.find_elements(By.XPATH,
+                                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[2]/div[2]/div[2]/div/div[2]/a')#剩余活动时间
+    for List in coordinate_list4:
+        List.click()
+
+    while (d > 0):
+        brower.find_element(By.XPATH,
+                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[4]/div[2]/div[2]/div/div/input').send_keys(
+            Keys.BACKSPACE)
+        d -= 1
+    brower.find_element(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[3]/div[4]/div[2]/div[2]/div/div/input').send_keys(
+        '{}'.format(boost))#火的数量
+
+    coordinate_list5 = brower.find_elements(By.XPATH,
+                                            '//*[@id="app"]/div[4]/div[2]/div[1]/div[2]/div/ul/li[5]/a')#切换标签
+    for List in coordinate_list5:
+        List.click()
+    time.sleep(3)
+    brower.save_screenshot(png_name)
+    brower.close()
+
+
+def screen_shotID(url, png_name):
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    brower.maximize_window()
+    actions = ActionChains(brower)
+    actions.click().perform()
+    time.sleep(8)
+    brower.save_screenshot(png_name)
+    brower.close()
+
+
+def screen_shot(url, png_name):
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    brower.maximize_window()
+    actions = ActionChains(brower)
+    actions.click().perform()
+    i = 10
+    while (i > 0):
+        coordinate_list = brower.find_elements(By.XPATH, '//span[text()="显示更多"]')
+        i -= 1
+        for List in coordinate_list:
+            List.click()
+    time.sleep(3)
+    brower.save_screenshot(png_name)
+    brower.close()
+
+
+def screen_shot_filter(url, png_name, key):
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    brower.maximize_window()
+    actions = ActionChains(brower)
+    # 开始选择语言直接忽略 初始化完可以删除 不过无所谓
+    actions.click().perform()
+    #bestdori网页需要主动点击search button 点击一次后关闭浏览器也还在 所以这里删除了初始化bestdori的部分 循环没必要 但是懒得删
+    j = 1
+    while (j > 0):
+        coordinate_list = brower.find_elements(By.XPATH,
+                                               '//*[@id="app"]/div[4]/div[2]/div[1]/div[2]/div[2]/div[1]/div[2]/div/div[3]/a')
+        j -= 1
+        for List in coordinate_list:
+            List.click()
+    brower.find_element_by_class_name('input').send_keys(Keys.ESCAPE)
+    brower.find_element_by_class_name('input').send_keys('{}'.format(key))
+    i = 10
+    while (i > 0):
+        coordinate_list = brower.find_elements(By.XPATH, '//span[text()="显示更多"]')
+        i -= 1
+        for List in coordinate_list:
+            List.click()
+    time.sleep(3)
+    brower.save_screenshot(png_name)
+    brower.close()
+
+
+def screen_shot_filterMeta(url, png_name, key):
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    brower.maximize_window()
+    actions = ActionChains(brower)
+    actions.click().perform()
+    coordinate_list1 = brower.find_elements(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[4]/div[2]/div/div[2]/a')
+    for List in coordinate_list1:
+        List.click()
+    j = 1
+    while (j > 0):
+        coordinate_list = brower.find_elements(By.XPATH,
+                                               '//*[@id="app"]/div[4]/div[2]/div[1]/div[4]/div[2]/div/div[3]/a')
+        j -= 1
+        for List in coordinate_list:
+            List.click()
+    brower.find_element_by_class_name('input').send_keys(Keys.ESCAPE)
+    brower.find_element_by_class_name('input').send_keys('{}'.format(key))
+    i = 10
+    while (i > 0):
+        coordinate_list2 = brower.find_elements(By.XPATH, '//span[text()="显示更多"]')
+        i -= 1
+        for List in coordinate_list2:
+            List.click()
+    time.sleep(3)
+    brower.save_screenshot(png_name)
+    coordinate_list1 = brower.find_elements(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[4]/div[2]/div/div[2]/a')
+    for List in coordinate_list1:
+        List.click()
+    brower.close()
+
+
+def screen_shot_filterSong(url, png_name, key):
+    i = 10
+    brower = webdriver.PhantomJS()
+    brower.get(url)
+    brower.maximize_window()
+    actions = ActionChains(brower)
+    actions.click().perform()
+    coordinate_list1 = brower.find_elements(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[4]/div[2]/div/div[2]/a')
+    for List in coordinate_list1:
+        List.click()
+    j = 1
+    while (j > 0):
+        coordinate_list = brower.find_elements(By.XPATH,
+                                               '//*[@id="app"]/div[4]/div[2]/div[1]/div[2]/div[2]/div/div[2]/div/div[3]/a')
+        j -= 1
+        for List in coordinate_list:
+            List.click()
+    brower.find_element_by_class_name('input').send_keys(Keys.ESCAPE)
+    brower.find_element_by_class_name('input').send_keys('{}'.format(key))
+    while (i > 0):
+        coordinate_list1 = brower.find_elements(By.XPATH, '//span[text()="显示更多"]')
+        i -= 1
+        for List in coordinate_list1:
+            List.click()
+    coordinate_list2 = brower.find_elements(By.XPATH, '//*[@id="app"]/div[4]/div[2]/div[1]/div[4]/a')
+    #点击搜索结果的第一首歌
+    for List in coordinate_list2:
+        List.click()
+
+    time.sleep(3)
+    brower.save_screenshot(png_name)
+    brower.close()
+
+
+def transparencewhite(img):
+    sp = img.size
+    width = sp[0]
+    height = sp[1]
+    print(sp)
+    for yh in range(height):
+        for xw in range(width):
+            dot = (xw, yh)
+            color_d = img.getpixel(dot)
+            if (color_d[3] == 0):
+                color_d = (255, 255, 255, 255)
+                img.putpixel(dot, color_d)
+    return img
+
+
 
 img_list1 = []
 img_list2 = []
+img_list3 = []
 
 
 def timePass(time1, time2):
@@ -36,7 +402,6 @@ def timePass(time1, time2):
         return True
     else:
         return False
-
 
 def get_img_list(key):
     img_list = []
@@ -150,7 +515,7 @@ while True:
                 elif on_fullmatch(message, 'toko') or on_fullmatch(message, '透子'):
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '和透子还有morfonica演奏的日子每天都很开心'})
 
-                elif on_fullmatch(message, '早上好') or on_fullmatch(message, '早')\
+                elif on_fullmatch(message, '早上好') or on_fullmatch(message, '早') \
                         or on_fullmatch(message, '早安'):
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '早上好！今天也要过普通的一天哟！'})
 
@@ -181,6 +546,13 @@ while True:
 
                 elif on_fullmatch(message, '贴贴'):
                     i = random.randint(28, 31)
+                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
+                                        'q{}.png'.format(i))
+                    msg = '[CQ:image,file=file:///{}]'.format(path)
+                    send_group(group, msg)
+
+                elif on_fullmatch(message, 'nnm抱抱') or on_fullmatch(message, '抱抱'):
+                    i = random.randint(55, 63)
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
                                         'q{}.png'.format(i))
                     msg = '[CQ:image,file=file:///{}]'.format(path)
@@ -252,7 +624,7 @@ while True:
                              .format(qq, face, height, ds, color, hair, cup, color, char, identity)})
 
             else:
-
+                playerID = 0
                 if on_fullmatch(message, '成分查询') or on_fullmatch(message, '群友成分'):
                     msg = 'nnm认为群友成分过于复杂， 内部错误！'
                     send_group(group, msg)
@@ -312,6 +684,10 @@ while True:
                 elif on_fullmatch(message, 'nnm骂我'):
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '八嘎変態无路赛'})
 
+                elif on_fullmatch(message, 'nnm辛苦了'):
+                    msg = '这种程度的练习算辛苦吗..\n可是之前ruirui告诉我每天练习十几个小时是非常普通的。\n普通的定义到底是什么呢?'
+                    send_group(group, msg)
+
                 elif on_fullmatch(message, '买nnm'):
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '不可以买七深哦'})
 
@@ -347,6 +723,11 @@ while True:
                     msg = '[CQ:image,file=file:///{}]'.format(path)
                     send_group(group, msg)
 
+                elif on_fullmatch(message, '买面包'):
+                    i = random.randint(4, 6)
+                    msg = '摩卡带着nnm两千个面包跑路了, 说不定某天nnm也要为了练习放弃卖甜点的工作哦。 \n不要那么严肃，当然是开玩笑的啦， 我当然是会为最喜欢的大家随时提供甜点的哦。'
+                    send_group(group, msg)
+
                 elif on_fullmatch(message, '早上好') or on_fullmatch(message, '早') \
                         or on_fullmatch(message, '早安'):
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '早上好！今天也要过普通的一天哟！'})
@@ -354,7 +735,9 @@ while True:
                 elif on_fullmatch(message, '晚安') or on_fullmatch(message, '睡觉') or on_fullmatch(message, '睡了'):
                     send_msg({'msg_type': 'group', 'number': group, 'msg': '晚安！做个好梦!'})
 
-                elif on_fullmatch(message, '哈卡奶') or on_fullmatch(message, '儚い') or on_fullmatch(message, '哈卡乃') or on_fullmatch(message, '哈卡奈'):
+                elif on_fullmatch(message, '哈卡奶') or on_fullmatch(message, '儚い') or on_fullmatch(message,
+                                                                                                 '哈卡乃') or on_fullmatch(
+                        message, '哈卡奈'):
                     j = random.randint(0, 3)  # 加图片
                     if j == 0:
                         send_msg({'msg_type': 'group', 'number': group, 'msg': '哈卡奶'})
@@ -375,7 +758,9 @@ while True:
                     send_msg({'msg_type': 'group', 'number': group,
                               'msg': '刚刚薰前辈来店里让我转告千圣前辈: 不要叫我小熏！'})
 
-                elif on_fullmatch(message, '美竹兰') or on_fullmatch(message, '兰') or on_fullmatch(message, 'ran') or on_fullmatch(message, '红挑染'):
+                elif on_fullmatch(message, '美竹兰') or on_fullmatch(message, '兰') or on_fullmatch(message,
+                                                                                                'ran') or on_fullmatch(
+                        message, '红挑染'):
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
                                         'q51.jpg')
                     send_msg({'msg_type': 'group', 'number': group,
@@ -384,16 +769,20 @@ while True:
                                      '[CQ:image,file=file:///{}]'.format(path)
                               })
 
-                elif  on_fullmatch(message, '八潮瑠唯') or on_fullmatch(message, '瑠唯') or on_fullmatch(message, 'rui') or on_fullmatch(message, 'ruirui'):
+                elif on_fullmatch(message, '八潮瑠唯') or on_fullmatch(message, '瑠唯') or on_fullmatch(message,
+                                                                                                  'rui') or on_fullmatch(
+                        message, 'ruirui'):
                     send_msg({'msg_type': 'group', 'number': group,
                               'msg': '唯唯昨天跟我说一天练习十小时以上是非常正常的一件事哦。 既然对于大家非常普通的事，那七深也要开始加油练习！'})
 
                 elif on_fullmatch(message, '千圣') or on_fullmatch(message, '千圣同学') or on_fullmatch(message, 'cst'):
                     j = random.randint(0, 1)
                     if j == 0:
-                        send_msg({'msg_type': 'group', 'number': group, 'msg': '千圣同学这里遇到你真是命运的安排，多么梦幻啊！怎么了千圣前辈，这是薰前辈教我的普通说话方式，难道有什么问题吗?'})
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '千圣同学这里遇到你真是命运的安排，多么梦幻啊！怎么了千圣前辈，这是薰前辈教我的普通说话方式，难道有什么问题吗?'})
                     else:
-                        send_msg({'msg_type': 'group', 'number': group, 'msg': '我可爱的千圣同学，不要这么冷漠，和我一起吃晚餐是多么梦幻的一件事啊！原来这就是普通的表达方式啊，千圣前辈的怎么了，怎么脸色有点难看?'})
+                        send_msg({'msg_type': 'group', 'number': group,
+                                  'msg': '我可爱的千圣同学，不要这么冷漠，和我一起吃晚餐是多么梦幻的一件事啊！原来这就是普通的表达方式啊，千圣前辈的怎么了，怎么脸色有点难看?'})
 
                 elif on_fullmatch(message, '花音') or on_fullmatch(message, 'kanon') or on_fullmatch(message, '水母'):
                     j = random.randint(0, 3)
@@ -415,7 +804,9 @@ while True:
                                      '即便是因为看向湿润一千次天空而迷茫时，也永远要不要忘记和最喜欢的大家一起相处的时光和'
                                      '那份永远不会令人迷失的星之鼓动吧！'})  # 发病小作文
 
-                elif on_fullmatch(message, '蝶组') or on_fullmatch(message, 'mornica') or on_fullmatch(message,'morfornica') or on_fullmatch( message, '毛二力') \
+                elif on_fullmatch(message, '蝶组') or on_fullmatch(message, 'mornica') or on_fullmatch(message,
+                                                                                                     'morfornica') or on_fullmatch(
+                        message, '毛二力') \
                         or on_fullmatch(message, '蝶团') or on_fullmatch(message, '蝶'):
                     i = random.randint(0, 1)
                     if i == 0:
@@ -435,7 +826,7 @@ while True:
 
                 elif on_fullmatch(message, 'help') or on_fullmatch(message, '使用说明') or on_fullmatch(message, '菜单'):
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
-                                        'q54.jpg')
+                                        'q54.png')
                     msg = '[CQ:image,file=file:///{}]'.format(path)
                     send_group(group, msg)
 
@@ -482,6 +873,13 @@ while True:
 
                 elif on_fullmatch(message, 'nnm可爱'):
                     i = random.randint(7, 9)
+                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
+                                        'q{}.png'.format(i))
+                    msg = '[CQ:image,file=file:///{}]'.format(path)
+                    send_group(group, msg)
+
+                elif on_fullmatch(message, 'nnm抱抱'):
+                    i = random.randint(55, 63)
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
                                         'q{}.png'.format(i))
                     msg = '[CQ:image,file=file:///{}]'.format(path)
@@ -607,11 +1005,48 @@ while True:
                     msg = '[CQ:image,file=file:///{}]'.format(path)
                     send_group(group, msg)
 
-                elif on_fullmatch(message, '？') or on_fullmatch(message, '?') or on_fullmatch(message, '？？？') or on_fullmatch(message, '???'):
+                elif on_fullmatch(message, 'nnm抽衣服'):
+                    concat_images(get_image_names(PATH), NAME, PATH)
+                    path1 = 'C:/Users/Administrator/Desktop/nnm/nnm_bot/home_base.png'
+                    path2 = 'C:/Users/Administrator/Desktop/nnm/nnm_bot/test.png'
+                    path3 = 'C:/Users/Administrator/Desktop/nnm/nnm_bot/final.png'
+                    Picture_Synthesis(mother_img=path1,
+                                      son_img=path2,
+                                      save_img=path3,
+                                      coordinate=(580, 160)  # 如果为None表示直接将子图在母图中居中也可以直接赋值坐标
+                                      # coordinate=(50,50)
+                                      )
+                    img = Image.open('final.png')
+                    img = transparencewhite(img)
+                    img.save('final.png')
+                    msg = '[CQ:image,file=file:///{}]'.format(path3)
+                    send_group(group, msg)
+
+                elif on_fullmatch(message, '？') or on_fullmatch(message, '?') or on_fullmatch(message,
+                                                                                              '？？？') or on_fullmatch(
+                        message, '???'):
                     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'emoji',
                                         'q37.png')
                     msg = '[CQ:image,file=file:///{}]'.format(path)
                     send_group(group, msg)
+
+                elif on_prefix(message, 'nnm画图'):#之后打算更换novel 先将就用下
+                     try:
+                         user_id = rev['sender']['user_id']
+                         text = get_prefix(message, 'nnm画图')
+                         if (len(text) != 0):
+                             url = autoPaint(text)
+                             if on_fullmatch(url, '请求重试，连接错误(再发一次就行，偶尔会有这种情况，如果一直显示错误只能换个时间尝试了，百度ai背大锅)'):
+                                 msg = url
+                                 send_group(group, msg)
+                             else:
+                                 msg = '[CQ:at,qq={}]\n[CQ:image,file={}]'.format(user_id,url)
+                                 send_group(group, msg)
+                         else:
+                             msg = '请输入条件，记得用空格隔开哦'
+                             send_group(group, msg)
+                     except:
+                         send_msg({'msg_type': 'group', 'number': group, 'msg': '这张图好像不太普通哟'})
 
                 elif on_fullmatch(message, '来点普通的邦邦日常'):
                     try:
@@ -620,6 +1055,413 @@ while True:
                                   'msg': '[CQ:image,type=flash,file={}]'.format(url)})
                     except:
                         send_msg({'msg_type': 'group', 'number': group, 'msg': '这张图好像不太普通哟'})
+
+                elif on_prefix(message, 'nnm绑定玩家'):
+                    user_id = rev['sender']['user_id']
+                    number = get_prefix(message, 'nnm绑定玩家')
+                    responseText = searchPlayer.getID(user_id, number)
+                    send_msg({'msg_type': 'group', 'number': group,
+                              'msg': '[CQ:at,qq={}] {}'
+                             .format(user_id, responseText)})
+
+                elif on_prefix(message, 'nnm更换玩家id'):
+                    user_id = rev['sender']['user_id']
+                    number = get_prefix(message, 'nnm更换玩家id')
+                    print(number)
+                    responseText = searchPlayer.exchangeID(user_id, number)
+                    send_msg({'msg_type': 'group', 'number': group,
+                              'msg': '[CQ:at,qq={}] {}'
+                             .format(user_id, responseText)})
+
+                elif on_fullmatch(message, 'nnm玩家状态'):
+                    language()
+                    qq = rev['sender']['user_id']
+                    playerID = searchPlayer.myID(user_id)
+                    print(playerID)
+                    if playerID != 0:
+                        url = "https://bestdori.com/tool/playersearch/cn/{}".format(playerID)
+                        screen_shotID(url, '14.png')
+                        img = Image.open('14.png')
+                        img = transparencewhite(img)
+                        print(img.size)
+                        cropped = img.crop((243, 261, img.width, img.height - 50))  # (left, upper, right, lower)
+                        cropped.save('14.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '14.png')
+                        msg = '[CQ:at,qq={}]\n[CQ:image,file=file:///{}]\n如果显示不可用可能是由错误id导致的，请重新检查id并更换哦'.format(qq,path)
+                        send_group(group, msg)
+                    else:
+                        msg = '你还没有绑定玩家哦，发送nnm绑定玩家+id试试吧'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm查询玩家'):
+                    language()
+                    playerID = get_prefix(message, 'nnm查询玩家')
+                    if playerID != '':
+                        url = "https://bestdori.com/tool/playersearch/cn/{}".format(playerID)
+                        screen_shotID(url, '14.png')
+                        img = Image.open('14.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 261, img.width, img.height - 50))  # (left, upper, right, lower)
+                        cropped.save('14.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '14.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '请输入id！'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm绑定日服玩家'):
+                    user_id = rev['sender']['user_id']
+                    number = get_prefix(message, 'nnm绑定日服玩家')
+                    responseText = searchPlayerJP.getID(user_id, number)
+                    send_msg({'msg_type': 'group', 'number': group,
+                              'msg': '[CQ:at,qq={}] {}'
+                             .format(user_id, responseText)})
+
+                elif on_prefix(message, 'nnm更换日服玩家id'):
+                    user_id = rev['sender']['user_id']
+                    number = get_prefix(message, 'nnm更换日服玩家id')
+                    print(number)
+                    responseText = searchPlayerJP.exchangeID(user_id, number)
+                    send_msg({'msg_type': 'group', 'number': group,
+                              'msg': '[CQ:at,qq={}] {}'
+                             .format(user_id, responseText)})
+
+                elif on_fullmatch(message, 'nnm日服玩家状态'):
+                    language()
+                    qq = rev['sender']['user_id']
+                    playerID = searchPlayerJP.myID(user_id)
+                    print(playerID)
+                    if playerID != 0:
+                        url = "https://bestdori.com/tool/playersearch/jp/{}".format(playerID)
+                        screen_shotID(url, '15.png')
+                        img = Image.open('15.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 261, img.width, img.height - 50))  # (left, upper, right, lower)
+                        cropped.save('15.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '15.png')
+                        msg = '[CQ:at,qq={}]\n[CQ:image,file=file:///{}]\n如果显示不可用可能是由错误id导致的，请重新检查id并更换哦'.format(qq,path)
+                        send_group(group, msg)
+                    else:
+                        msg = '你还没有绑定玩家哦，发送nnm绑定日服玩家+id试试吧'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm查询日服玩家'):
+                    language()
+                    playerID = get_prefix(message, 'nnm查询日服玩家')
+                    if playerID != '':
+                        url = "https://bestdori.com/tool/playersearch/jp/{}".format(playerID)
+                        screen_shotID(url, '15.png')
+                        img = Image.open('15.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 300, img.width, img.height - 50))  # (left, upper, right, lower)
+                        cropped.save('15.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '15.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '请输入id！'
+                        send_group(group, msg)
+
+
+                elif on_fullmatch(message, 'nnm活动分计算公式'):
+                    msg = '已拥有分数：\n目标分数：\n每局获得分数：\n预计使用火的数量(如果为0的话将会按照活动剩余时间以一天8小时睡眠计入自然回火)：'
+                    send_group(group, msg)
+
+                elif on_prefix(message, '已拥有分数'):
+                    language()
+                    start = ''
+                    end = ''
+                    point = ''
+                    boost = ''
+                    if message.count('\n') > 2:
+                        str_list = message.split(sep='\n')
+                        start = str_list[0]
+                        end = str_list[1]
+                        point = str_list[2]
+                        boost = str_list[3]
+                        if start.count('：') > 0:
+                            list1 = start.split(sep='：')
+                            start = list1[1]
+                            start.strip()
+                            print(start)
+                        if end.count('：') > 0:
+                            list2 = end.split(sep='：')
+                            end = list2[1]
+                            end.strip()
+                            print(end)
+                        if point.count('：') > 0:
+                            list3 = point.split(sep='：')
+                            point = list3[1]
+                            point.strip()
+                            print(point)
+                        if boost.count('：') > 0:
+                            list4 = boost.split(sep='：')
+                            boost = list4[1]
+                            boost.strip()
+                            print(boost)
+
+                    url = "https://bestdori.com/tool/eventcalculator"
+                    if start.isdigit() and end.isdigit() and point.isdigit() and boost.isdigit():
+                        screen_shot_point(url, '20.png', start, end, point, boost)
+                        img = Image.open('20.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, img.height-100))  # (left, upper, right, lower)
+                        cropped.save('20.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '20.png')
+                        msg = '[CQ:image,file=file:///{}]\n'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '请输入正确的格式哦，如果不知道格式请输入nnm活动分计算公式来查看，只需要复制并填入数字就可以哦'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm活动t'):
+                    language()
+                    number = get_prefix(message, 'nnm活动t')
+                    if number.isdigit():
+                        url = "https://bestdori.com/tool/eventtracker/cn/t{}".format(number)
+                        screen_shot(url, '16.png')
+                        img = Image.open('16.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, 1000))  # (left, upper, right, lower)
+                        cropped.save('16.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '16.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '活动排名只能查t10, t50, t100, t300, t1000 和 t2000哦'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm历史活动'):
+                    language()
+                    number = get_prefix(message, 'nnm历史活动')
+                    list = number.split("t")
+                    number = list[0]
+                    rank = list[1]
+                    print(rank)
+                    print(number)
+                    if number.isdigit() and rank.isdigit():
+                        url = "https://bestdori.com/tool/eventtracker/cn/t{}/{}/".format(rank, number)
+                        screen_shot(url, '17.png')
+                        img = Image.open('17.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, 1000))  # (left, upper, right, lower)
+                        cropped.save('17.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '17.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '请确实正确的活动编号，另外活动排名只能查t10, t50, t100, t300, t1000 和 t2000哦'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm日本活动t'):
+                    language()
+                    number = get_prefix(message, 'nnm日本活动t')
+                    if number.isdigit():
+                        url = "https://bestdori.com/tool/eventtracker/jp/t{}".format(number)
+                        screen_shot(url, '18.png')
+                        img = Image.open('18.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, 1000))  # (left, upper, right, lower)
+                        cropped.save('18.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '18.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '活动排名只能查t10, t50, t100, t300, t1000 和 t2000哦'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm日本历史活动'):
+                    language()
+                    number = get_prefix(message, 'nnm日本历史活动')
+                    list = number.split("t")
+                    number = list[0]
+                    rank = list[1]
+                    print(rank)
+                    print(number)
+                    if number.isdigit() and rank.isdigit():
+                        url = "https://bestdori.com/tool/eventtracker/jp/t{}/{}/".format(rank, number)
+                        screen_shot(url, '19.png')
+                        img = Image.open('19.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, 1000))  # (left, upper, right, lower)
+                        cropped.save('19.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '19.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        msg = '请确实正确的活动编号，另外活动排名只能查t10, t50, t100, t300, t1000 和 t2000哦'
+                        send_group(group, msg)
+
+
+                elif on_prefix(message, 'nnm查卡'):
+                    language()
+                    number = get_prefix(message, 'nnm查卡')
+                    if number.isdigit():
+                        url = "https://bestdori.com/info/cards/{}".format(number)
+                        screen_shot(url, '1.png')
+                        img = Image.open('1.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                        cropped.save('1.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '1.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+                    else:
+                        url = "https://bestdori.com/info/cards"
+                        screen_shot_filter(url, '3.png', number)
+                        img = Image.open('3.png')
+                        img = transparencewhite(img)
+                        cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                        cropped.save('3.png')
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '3.png')
+                        msg = '[CQ:image,file=file:///{}]'.format(path)
+                        send_group(group, msg)
+
+
+                elif on_prefix(message, 'nnm查活动'):
+                    try:
+                        language()
+                        number = get_prefix(message, 'nnm查活动')
+                        if number.isdigit():
+                            url = "https://bestdori.com/info/events/{}".format(number)
+                            screen_shot(url, '2.png')
+                            img = Image.open('2.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('2.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '2.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                        else:
+                            url = "https://bestdori.com/info/events"
+                            screen_shot_filter(url, '6.png', number)
+                            img = Image.open('6.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('6.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '6.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                    except:
+                        msg = '没有找到这个活动哦'
+                        send_group(group, msg)
+
+
+                elif on_prefix(message, 'nnm卡池'):
+                    try:
+                        language()
+                        number = get_prefix(message, 'nnm卡池')
+                        if number.isdigit():
+                            url = "https://bestdori.com/info/gacha/{}".format(number)
+                            screen_shot(url, '4.png')
+                            img = Image.open('4.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('4.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '4.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                        else:
+                            url = "https://bestdori.com/info/gacha"
+                            screen_shot_filter(url, '7.png', number)
+                            img = Image.open('7.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('7.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '7.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                    except:
+                        msg = '没有找到这个卡池哦'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm服装'):
+                    try:
+                        language()
+                        number = get_prefix(message, 'nnm服装')
+                        if number.isdigit():
+                            url = "https://bestdori.com/info/costumes/{}".format(number)
+                            screen_shot(url, '9.png')
+                            img = Image.open('9.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('9.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '9.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                        else:
+                            url = "https://bestdori.com/info/costumes"
+                            screen_shot_filter(url, '10.png', number)
+                            img = Image.open('10.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('10.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '10.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                    except:
+                        msg = '没有找到这个卡池哦'
+                        send_group(group, msg)
+
+                elif on_prefix(message, 'nnm查曲'):
+                    try:
+                        language()
+                        filter = get_prefix(message, 'nnm查曲')
+                        if filter.isdigit():
+                            url = "https://bestdori.com/info/songs/{}".format(filter)
+                            screen_shot(url, '8.png')
+                            img = Image.open('8.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('8.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '8.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                        else:
+                            url = "https://bestdori.com/info/songs"
+                            screen_shot_filterSong(url, '5.png', filter)
+                            img = Image.open('5.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('5.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '5.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                    except:
+                        msg = '没有找到这个曲子哦'
+                        send_group(group, msg)
+
+
+                elif on_prefix(message, 'nnm效率曲'):
+                    try:
+                        language()
+                        if on_fullmatch(message, 'nnm效率曲'):
+                            url = "https://bestdori.com/info/songmeta"
+                            screen_shot(url, '11.png')
+                            img = Image.open('11.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('11.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '11.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                        else:
+                            number = get_prefix(message, 'nnm效率曲')
+                            url = "https://bestdori.com/info/songmeta"
+                            screen_shot_filterMeta(url, '13.png', number)
+                            img = Image.open('13.png')
+                            img = transparencewhite(img)
+                            cropped = img.crop((243, 0, img.width, img.height))  # (left, upper, right, lower)
+                            cropped.save('13.png')
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'nnm_bot', '13.png')
+                            msg = '[CQ:image,file=file:///{}]'.format(path)
+                            send_group(group, msg)
+                    except:
+                        msg = '没有找到这首曲子哦'
+                        send_group(group, msg)
+
+
 
                 elif on_fullmatch(message, '来点纸片人') or on_fullmatch(message, '来点二次元'):
                     try:
@@ -639,12 +1481,20 @@ while True:
                     except:
                         send_msg({'msg_type': 'group', 'number': group, 'msg': 'nnm也还没有看到漫画内容呢~'})
 
+
                 elif on_fullmatch(message, '买甜点'):
                     user_id = rev['sender']['user_id']
                     responseText = buy_bread.buyBread(user_id)
                     send_msg({'msg_type': 'group', 'number': group,
-                                'msg': '[CQ:at,qq={}] {}'
-                                .format(user_id, responseText)})
+                              'msg': '[CQ:at,qq={}] {}'
+                             .format(user_id, responseText)})
+
+                elif on_fullmatch(message, '买甜点') or on_fullmatch(message, '買甜點'):
+                    user_id = rev['sender']['user_id']
+                    responseText = buy_bread.buyBread(user_id)
+                    send_msg({'msg_type': 'group', 'number': group,
+                              'msg': '[CQ:at,qq={}] {}'
+                             .format(user_id, responseText)})
 
                 elif on_fullmatch(message, '查甜点'):
                     user_id = rev['sender']['user_id']
@@ -668,15 +1518,15 @@ while True:
 
                     if (object_id is None):
                         send_msg({'msg_type': 'group', 'number': group,
-                                    'msg': '[CQ:at,qq={}] 需要@一个群友哦'
-                                    .format(user_id)})
+                                  'msg': '[CQ:at,qq={}] 需要@一个群友哦'
+                                 .format(user_id)})
                     else:
                         # 用group()获取匹配到的第一个对象，从str转换为int
                         object_id = int(object_id.group())
                         responseText = buy_bread.grabBread(user_id, object_id)
                         send_msg({'msg_type': 'group', 'number': group,
-                                    'msg': '[CQ:at,qq={}] {}'
-                                    .format(user_id, responseText)})
+                                  'msg': '[CQ:at,qq={}] {}'
+                                 .format(user_id, responseText)})
 
 
 
@@ -707,6 +1557,29 @@ while True:
                         send_msg({'msg_type': 'group', 'number': group,
                                   'msg': '{}和[CQ:at,qq={}]贴贴'
                                  .format(user_id, object_id)})
+
+                elif '-F77B055126CD3FB3314E035E68802554/0?term=3]' in message:
+                    responseText = '是热水酱哦, ' + buy_bread.eatBreadImage(user_id)
+                    text = '吃掉了'
+                    if text in responseText:
+                        # 此处需要修改路径，修改图片编号
+                        i = random.randint(1, 267)
+                        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'nick_name',
+                                            'morfornica', 'yuuka', '{}.jpg'.format(i))
+                        msg = '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'.format(user_id, responseText, path)
+                        send_group(group, msg)
+                    else:
+                        responseText = buy_bread.eatBreadImage(user_id)
+                        msg = '[CQ:at,qq={}] {}'.format(user_id, responseText)
+                        send_group(group, msg)
+
+                elif on_prefix(message, '来点nil') or on_prefix(message, '买nil'):
+                    msg = '/remake'
+                    send_group(group, msg)
+
+                elif on_fullmatch(message, 'nnm玩家状态'):
+                    msg = '玩家状态'
+                    send_group(group, msg)
 
                 elif on_prefix(message, '来点'):
                     name = get_prefix(message, '来点')
@@ -835,7 +1708,7 @@ while True:
                         text = '吃掉了'
                         if text in responseText:
                             # 此处需要修改路径，修改图片编号
-                            i = random.randint(10001, 10258)
+                            i = random.randint(1, 267)
                             path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'nick_name',
                                                 'morfornica', 'yuuka', '{}.jpg'.format(i))
                             msg = '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'.format(user_id, responseText, path)
@@ -905,6 +1778,21 @@ while True:
                             msg = '[CQ:at,qq={}] {}'.format(user_id, responseText)
                             send_group(group, msg)
 
+                    elif '伊藤美来' in guessText:
+                        responseText = guessText + ', ' + buy_bread.eatBreadImage(user_id)
+                        text = '吃掉了'
+                        if text in responseText:
+                            # 此处需要修改路径，修改图片编号
+                            i = random.randint(1, 28)
+                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'imageOnHtml', 'nick_name',
+                                                'hhw', 'miku', '{}.jpg'.format(i))
+                            msg = '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'.format(user_id, responseText, path)
+                            send_group(group, msg)
+                        else:
+                            responseText = buy_bread.eatBreadImage(user_id)
+                            msg = '[CQ:at,qq={}] {}'.format(user_id, responseText)
+                            send_group(group, msg)
+
 
                 elif on_suffix(message, '是谁'):
                     name = get_suffix(message, '是谁')
@@ -939,686 +1827,773 @@ while True:
                     msg = '[CQ:at,qq={}] {}\n[CQ:image,file=file:///{}]'.format(user_id, responseText, path)
                     send_group(group, msg)
 
-                elif on_fullmatch(message, '谱面挑战') and (timePass('12:30', '18:30') == True or group == 820651903 or group == 164839398):
-                    num = 0
-                    msg = '请选择难度（easy/normal/hard/expert/special)(今天摸了，还没做计时，一定要手动放弃)'
-                    send_group(group, msg)
-                    while True:
-                        try:
-                            rev1 = rev_msg()
-                            id1 = rev1['message_id']
-                            if (len(id_list) >= 50):
-                                id_list = []
-                            if id1 not in id_list:
-                                id_list.append(id1)
-                            else:
+                elif on_fullmatch(message, '谱面挑战'):
+                    responseText = '需要5份甜点哦，' + buy_bread.eatBreadImage(user_id)
+                    msgg = responseText
+                    text = '吃掉了'
+                    send_group(group, msgg)
+                    if text in responseText:
+                        num = 0
+                        msg = '请选择难度（easy/normal/hard/expert/special)(限时两分钟,不会可以输入放弃哦)'
+                        send_group(group, msg)
+                        while True:
+                            try:
+                                rev1 = rev_msg()
+                                id1 = rev1['message_id']
+                                if (len(id_list) >= 50):
+                                    id_list = []
+                                if id1 not in id_list:
+                                    id_list.append(id1)
+                                else:
+                                    continue
+                            except:
                                 continue
-                        except:
-                            continue
-                        if rev1["post_type"] == "message":
-                            if rev1["message_type"] == "group":
-                                group1 = rev1['group_id']
-                                user_id1 = rev1['sender']['user_id']
-                                message1 = rev1['raw_message']
-                                if message1 in rev1["raw_message"]:
-                                    if group1 == group:
-                                        if on_fullmatch(message1, 'hard'):
-                                            responseText = '这是这首歌的谱面哦'
-                                            i = random.randint(1, 100)
-                                            r = random.randint(1, 25)
-                                            k = random.randint(0, 3)
-                                            if k != 3:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScoreHard', 'musicScoreHardEx',
-                                                                    '{}.png'.format(i))
-                                                msg = '选择难度hard: 将从所有27以上ex和sp难度和一些的25和26难度的歌里选取, 答对可以获得10份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}, 为ex难度\n[CQ:image,file=file:///{}]'.format(
-                                                    responseText, path)
-                                                send_group(group, msg)
-                                            else:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScoreHard', 'musicScoreHardSp',
-                                                                    '{}.png'.format(r))
-                                                msg = '选择难度hard: 将从所有27以上ex和sp难度和一些的25和26难度的歌里选取, 答对可以获得10份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]'.format(
-                                                    responseText, path)
-                                                send_group(group, msg)
-                                            while True:
-                                                try:
-                                                    rev1 = rev_msg()
-                                                    id1 = rev1['message_id']
-                                                    if (len(id_list) >= 50):
-                                                        id_list = []
-                                                    if id1 not in id_list:
-                                                        id_list.append(id1)
-                                                    else:
+                            if rev1["post_type"] == "message":
+                                if rev1["message_type"] == "group":
+                                    group1 = rev1['group_id']
+                                    user_id1 = rev1['sender']['user_id']
+                                    message1 = rev1['raw_message']
+                                    if message1 in rev1["raw_message"]:
+                                        if group1 == group:
+                                            if on_fullmatch(message1, 'hard'):
+                                                timeLimit = 2 * 60
+                                                start = time.time()
+                                                responseText = '这是这首歌的谱面哦'
+                                                i = random.randint(1, 100)
+                                                r = random.randint(1, 25)
+                                                k = random.randint(0, 3)
+                                                if k != 3:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScoreHard',
+                                                                        'musicScoreHardEx',
+                                                                        '{}.png'.format(i))
+                                                    msg = '选择难度hard: 将从所有27以上ex和sp难度和一些的25和26难度的歌里选取, 答对可以获得15份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}, 为ex难度\n[CQ:image,file=file:///{}]'.format(
+                                                        responseText, path)
+                                                    send_group(group, msg)
+                                                else:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScoreHard',
+                                                                        'musicScoreHardSp',
+                                                                        '{}.png'.format(r))
+                                                    msg = '选择难度hard: 将从所有27以上ex和sp难度和一些的25和26难度的歌里选取, 答对可以获得15份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]'.format(
+                                                        responseText, path)
+                                                    send_group(group, msg)
+                                                while True:
+                                                    try:
+                                                        rev1 = rev_msg()
+                                                        id1 = rev1['message_id']
+                                                        if (len(id_list) >= 50):
+                                                            id_list = []
+                                                        if id1 not in id_list:
+                                                            id_list.append(id1)
+                                                        else:
+                                                            continue
+                                                    except:
                                                         continue
-                                                except:
-                                                    continue
-                                                if rev1["post_type"] == "message":
-                                                    if rev1["message_type"] == "group":
-                                                        group1 = rev1['group_id']
-                                                        user_id1 = rev1['sender']['user_id']
-                                                        message1 = rev1['raw_message']
-                                                        if message1 in rev1["raw_message"]:
-                                                            if group1 == group:
-                                                                if on_suffix(message1, 'ex'):
-                                                                    name = get_suffix(message1, 'ex')
-                                                                    index, responseText = musicScoreHardEx.search(name)
-                                                                    if int(index) == i:
-                                                                        responseText = buy_bread.BreadChallenge(
-                                                                            user_id1, 10)
-                                                                        send_msg({'msg_type': 'group', 'number': group,
-                                                                                  'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                        break
-                                                                    else:
-                                                                        if num < 5:
-                                                                            msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                            send_group(group, msg)
-                                                                            num += 1
-                                                                            continue
-                                                                        else:
+                                                    if rev1["post_type"] == "message":
+                                                        if rev1["message_type"] == "group":
+                                                            group1 = rev1['group_id']
+                                                            user_id1 = rev1['sender']['user_id']
+                                                            message1 = rev1['raw_message']
+                                                            if message1 in rev1["raw_message"]:
+
+                                                                if (time.time() - start) < timeLimit:
+                                                                    if group1 == group:
+                                                                        if on_suffix(message1, 'ex'):
+                                                                            name = get_suffix(message1, 'ex')
+                                                                            index, responseText = musicScoreHardEx.search(
+                                                                                name)
+                                                                            if int(index) == i:
+                                                                                responseText = buy_bread.BreadChallenge(
+                                                                                    user_id1, 15)
+                                                                                send_msg({'msg_type': 'group',
+                                                                                          'number': group,
+                                                                                          'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                break
+                                                                            else:
+                                                                                if num < 5:
+                                                                                    msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                    send_group(group, msg)
+                                                                                    num += 1
+                                                                                    continue
+                                                                                else:
+                                                                                    if k != 3:
+                                                                                        musicName, responseText = musicScoreHardEx.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    elif k == 3:
+                                                                                        musicName, responseText = musicScoreHardSp.get_musicName(
+                                                                                            r)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    break
+                                                                        elif on_suffix(message1, 'sp'):
+                                                                            name = get_suffix(message1, 'sp')
+                                                                            index, responseText = musicScoreHardSp.search(
+                                                                                name)
+                                                                            if int(index) == r:
+                                                                                responseText = buy_bread.BreadChallenge(
+                                                                                    user_id1, 15)
+                                                                                send_msg({'msg_type': 'group',
+                                                                                          'number': group,
+                                                                                          'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                break
+                                                                            else:
+                                                                                if num < 5:
+                                                                                    msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                    send_group(group, msg)
+                                                                                    num += 1
+                                                                                    continue
+                                                                                else:
+                                                                                    if k != 3:
+                                                                                        musicName, responseText = musicScoreHardEx.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    elif k == 3:
+                                                                                        musicName, responseText = musicScoreHardSp.get_musicName(
+                                                                                            r)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    break
+                                                                        elif on_fullmatch(message1, '放弃'):
                                                                             if k != 3:
                                                                                 musicName, responseText = musicScoreHardEx.get_musicName(
                                                                                     i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
                                                                                     responseText)
                                                                                 send_group(group, msg)
                                                                             elif k == 3:
                                                                                 musicName, responseText = musicScoreHardSp.get_musicName(
                                                                                     r)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
                                                                                     responseText)
                                                                                 send_group(group, msg)
                                                                             break
-                                                                elif on_suffix(message1, 'sp'):
-                                                                    name = get_suffix(message1, 'sp')
-                                                                    index, responseText = musicScoreHardSp.search(name)
-                                                                    if int(index) == r:
-                                                                        responseText = buy_bread.BreadChallenge(
-                                                                            user_id1, 10)
-                                                                        send_msg({'msg_type': 'group', 'number': group,
-                                                                                  'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                        break
-                                                                    else:
-                                                                        if num < 5:
-                                                                            msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                            send_group(group, msg)
-                                                                            num += 1
-                                                                            continue
                                                                         else:
-                                                                            if k != 3:
-                                                                                musicName, responseText = musicScoreHardEx.get_musicName(
-                                                                                    i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
-                                                                                    responseText)
-                                                                                send_group(group, msg)
-                                                                            elif k == 3:
-                                                                                musicName, responseText = musicScoreHardSp.get_musicName(
-                                                                                    r)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
-                                                                                    responseText)
-                                                                                send_group(group, msg)
-                                                                            break
-                                                                elif on_fullmatch(message1, '放弃'):
-                                                                    if k != 3:
-                                                                        musicName, responseText = musicScoreHardEx.get_musicName(
-                                                                            i)
-                                                                        msg = '已放弃, 这首歌的名字是{}的ex难度'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                    elif k == 3:
-                                                                        musicName, responseText = musicScoreHardSp.get_musicName(
-                                                                            r)
-                                                                        msg = '已放弃, 这首歌的名字是{}的sp难度'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                    break
+                                                                            continue
+                                                                    else:
+                                                                        continue
                                                                 else:
-                                                                    continue
+                                                                    print('寄')
+                                                                    break
                                                             else:
-                                                                continue
+                                                                break
                                                         else:
                                                             break
                                                     else:
                                                         break
-                                                else:
-                                                    break
 
-                                        elif on_fullmatch(message1, 'expert'):
-                                            responseText = '这是这首歌的谱面哦'
-                                            i = random.randint(1, 415)
-                                            r = random.randint(1, 85)
-                                            k = random.randint(0, 3)
-                                            if k != 3:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScore', '{}.png'.format(i))
-                                                msg = '选择难度expert(无人生还): 将从所有歌里选取, 答对可以获得20份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}, 为ex难度\n[CQ:image,file=file:///{}]'.format(
-                                                    responseText, path)
-                                                send_group(group, msg)
-                                            else:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScoreSp', '{}.png'.format(r))
-                                                msg = '选择难度expert(无人生还): 将从所有歌里选取, 答对可以获得20份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]'.format(
-                                                    responseText, path)
-                                                send_group(group, msg)
-                                            while True:
-                                                try:
-                                                    rev1 = rev_msg()
-                                                    id1 = rev1['message_id']
-                                                    if (len(id_list) >= 50):
-                                                        id_list = []
-                                                    if id1 not in id_list:
-                                                        id_list.append(id1)
-                                                    else:
+                                            elif on_fullmatch(message1, 'expert'):
+                                                timeLimit = 2 * 60
+                                                start = time.time()
+                                                responseText = '这是这首歌的谱面哦'
+                                                i = random.randint(1, 415)
+                                                r = random.randint(1, 85)
+                                                k = random.randint(0, 3)
+                                                if k != 3:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScore', '{}.png'.format(i))
+                                                    msg = '选择难度expert(无人生还): 将从所有歌里选取, 答对可以获得25份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}, 为ex难度\n[CQ:image,file=file:///{}]'.format(
+                                                        responseText, path)
+                                                    send_group(group, msg)
+                                                else:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScoreSp',
+                                                                        '{}.png'.format(r))
+                                                    msg = '选择难度expert(无人生还): 将从所有歌里选取, 答对可以获得25份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]'.format(
+                                                        responseText, path)
+                                                    send_group(group, msg)
+                                                while True:
+                                                    try:
+                                                        rev1 = rev_msg()
+                                                        id1 = rev1['message_id']
+                                                        if (len(id_list) >= 50):
+                                                            id_list = []
+                                                        if id1 not in id_list:
+                                                            id_list.append(id1)
+                                                        else:
+                                                            continue
+                                                    except:
                                                         continue
-                                                except:
-                                                    continue
-                                                if rev1["post_type"] == "message":
-                                                    if rev1["message_type"] == "group":
-                                                        group1 = rev1['group_id']
-                                                        user_id1 = rev1['sender']['user_id']
-                                                        message1 = rev1['raw_message']
-                                                        if message1 in rev1["raw_message"]:
-                                                            if group1 == group:
-                                                                if on_suffix(message1, 'ex'):
-                                                                    name = get_suffix(message1, 'ex')
-                                                                    index, responseText = musicScore.search(name)
-                                                                    if int(index) == i:
-                                                                        responseText = buy_bread.BreadChallenge(
-                                                                            user_id1, 20)
-                                                                        send_msg({'msg_type': 'group', 'number': group,
-                                                                                  'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                        break
-                                                                    else:
-                                                                        if num < 5:
-                                                                            msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                            send_group(group, msg)
-                                                                            num += 1
-                                                                            continue
-                                                                        else:
+                                                    if rev1["post_type"] == "message":
+                                                        if rev1["message_type"] == "group":
+                                                            group1 = rev1['group_id']
+                                                            user_id1 = rev1['sender']['user_id']
+                                                            message1 = rev1['raw_message']
+                                                            if message1 in rev1["raw_message"]:
+
+                                                                if (time.time() - start) < timeLimit:
+                                                                    if group1 == group:
+                                                                        if on_suffix(message1, 'ex'):
+                                                                            name = get_suffix(message1, 'ex')
+                                                                            index, responseText = musicScore.search(
+                                                                                name)
+                                                                            if int(index) == i:
+                                                                                responseText = buy_bread.BreadChallenge(
+                                                                                    user_id1, 25)
+                                                                                send_msg({'msg_type': 'group',
+                                                                                          'number': group,
+                                                                                          'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                break
+                                                                            else:
+                                                                                if num < 5:
+                                                                                    msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                    send_group(group, msg)
+                                                                                    num += 1
+                                                                                    continue
+                                                                                else:
+                                                                                    if k != 3:
+                                                                                        musicName, responseText = musicScore.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    elif k == 3:
+                                                                                        musicName, responseText = musicScoreSp.get_musicName(
+                                                                                            r)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    break
+                                                                        elif on_suffix(message1, 'sp'):
+                                                                            name = get_suffix(message1, 'sp')
+                                                                            index, responseText = musicScoreSp.search(
+                                                                                name)
+                                                                            if int(index) == r:
+                                                                                responseText = buy_bread.BreadChallenge(
+                                                                                    user_id1, 25)
+                                                                                send_msg({'msg_type': 'group',
+                                                                                          'number': group,
+                                                                                          'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                break
+                                                                            else:
+                                                                                if num < 5:
+                                                                                    msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                    send_group(group, msg)
+                                                                                    num += 1
+                                                                                    continue
+                                                                                else:
+                                                                                    if k != 3:
+                                                                                        musicName, responseText = musicScore.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    elif k == 3:
+                                                                                        musicName, responseText = musicScoreSp.get_musicName(
+                                                                                            r)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    break
+                                                                        elif on_fullmatch(message1, '放弃'):
                                                                             if k != 3:
                                                                                 musicName, responseText = musicScore.get_musicName(
                                                                                     i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
                                                                                     responseText)
                                                                                 send_group(group, msg)
                                                                             elif k == 3:
                                                                                 musicName, responseText = musicScoreSp.get_musicName(
                                                                                     r)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
                                                                                     responseText)
                                                                                 send_group(group, msg)
                                                                             break
-                                                                elif on_suffix(message1, 'sp'):
-                                                                    name = get_suffix(message1, 'sp')
-                                                                    index, responseText = musicScoreSp.search(name)
-                                                                    if int(index) == r:
-                                                                        responseText = buy_bread.BreadChallenge(
-                                                                            user_id1, 20)
-                                                                        send_msg({'msg_type': 'group', 'number': group,
-                                                                                  'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                        break
-                                                                    else:
-                                                                        if num < 5:
-                                                                            msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                            send_group(group, msg)
-                                                                            num += 1
-                                                                            continue
                                                                         else:
-                                                                            if k != 3:
-                                                                                musicName, responseText = musicScore.get_musicName(
-                                                                                    i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
-                                                                                    responseText)
-                                                                                send_group(group, msg)
-                                                                            elif k == 3:
-                                                                                musicName, responseText = musicScoreSp.get_musicName(
-                                                                                    r)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
-                                                                                    responseText)
-                                                                                send_group(group, msg)
-                                                                            break
-                                                                elif on_fullmatch(message1, '放弃'):
-                                                                    if k != 3:
-                                                                        musicName, responseText = musicScore.get_musicName(
-                                                                            i)
-                                                                        msg = '已放弃, 这首歌的名字是{}的ex难度'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                    elif k == 3:
-                                                                        musicName, responseText = musicScoreSp.get_musicName(
-                                                                            r)
-                                                                        msg = '已放弃, 这首歌的名字是{}的sp难度'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                    break
+                                                                            continue
+                                                                    else:
+                                                                        continue
                                                                 else:
-                                                                    continue
+                                                                    break
                                                             else:
-                                                                continue
+                                                                break
                                                         else:
                                                             break
                                                     else:
                                                         break
-                                                else:
-                                                    break
 
-                                        elif on_fullmatch(message1, 'normal'):
-                                            responseText = '这是这首歌的谱面哦'
-                                            i = random.randint(1, 52)
-                                            r = random.randint(1, 15)
-                                            k = random.randint(0, 3)
-                                            if k != 3:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScoreNormal',
-                                                                    'musicScoreNormalEx', '{}.png'.format(i))
-                                                msg = '选择难度normal: 将从所有27以上ex和sp难度和国服所有带左右滑键sp的歌里选取, 答对可以获得5份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}, 为ex难度\n[CQ:image,file=file:///{}]'.format(
-                                                    responseText, path)
-                                                send_group(group, msg)
-                                            else:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScoreNormal',
-                                                                    'musicScoreNormalSp', '{}.png'.format(r))
-                                                msg = '选择难度normal: 将从所有27以上ex和sp难度和国服所有带左右滑键sp的歌里选取, 答对可以获得5份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]'.format(
-                                                    responseText, path)
-                                                send_group(group, msg)
-                                            while True:
-                                                try:
-                                                    rev1 = rev_msg()
-                                                    id1 = rev1['message_id']
-                                                    if (len(id_list) >= 50):
-                                                        id_list = []
-                                                    if id1 not in id_list:
-                                                        id_list.append(id1)
-                                                    else:
+                                            elif on_fullmatch(message1, 'normal'):
+                                                timeLimit = 2 * 60
+                                                start = time.time()
+                                                responseText = '这是这首歌的谱面哦'
+                                                i = random.randint(1, 52)
+                                                r = random.randint(1, 15)
+                                                k = random.randint(0, 3)
+                                                if k != 3:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScoreNormal',
+                                                                        'musicScoreNormalEx', '{}.png'.format(i))
+                                                    msg = '选择难度normal: 将从所有27以上ex和sp难度和国服所有带左右滑键sp的歌里选取, 答对可以获得10份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}, 为ex难度\n[CQ:image,file=file:///{}]'.format(
+                                                        responseText, path)
+                                                    send_group(group, msg)
+                                                else:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScoreNormal',
+                                                                        'musicScoreNormalSp', '{}.png'.format(r))
+                                                    msg = '选择难度normal: 将从所有27以上ex和sp难度和国服所有带左右滑键sp的歌里选取, 答对可以获得10份甜点哦\n记得歌的结尾要加ex或者sp哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]'.format(
+                                                        responseText, path)
+                                                    send_group(group, msg)
+                                                while True:
+                                                    try:
+                                                        rev1 = rev_msg()
+                                                        id1 = rev1['message_id']
+                                                        if (len(id_list) >= 50):
+                                                            id_list = []
+                                                        if id1 not in id_list:
+                                                            id_list.append(id1)
+                                                        else:
+                                                            continue
+                                                    except:
                                                         continue
-                                                except:
-                                                    continue
-                                                if rev1["post_type"] == "message":
-                                                    if rev1["message_type"] == "group":
-                                                        group1 = rev1['group_id']
-                                                        user_id1 = rev1['sender']['user_id']
-                                                        message1 = rev1['raw_message']
-                                                        if message1 in rev1["raw_message"]:
-                                                            if group1 == group:
-                                                                if on_suffix(message1, 'ex'):
-                                                                    name = get_suffix(message1, 'ex')
-                                                                    index, responseText = musicScoreNormalEx.search(
-                                                                        name)
-                                                                    if int(index) == i:
-                                                                        responseText = buy_bread.BreadChallenge(
-                                                                            user_id1, 5)
-                                                                        send_msg({'msg_type': 'group', 'number': group,
-                                                                                  'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                        break
-                                                                    else:
-                                                                        if num < 5:
-                                                                            msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                            send_group(group, msg)
-                                                                            num += 1
-                                                                            continue
-                                                                        else:
+                                                    if rev1["post_type"] == "message":
+                                                        if rev1["message_type"] == "group":
+                                                            group1 = rev1['group_id']
+                                                            user_id1 = rev1['sender']['user_id']
+                                                            message1 = rev1['raw_message']
+                                                            if message1 in rev1["raw_message"]:
+                                                                if (time.time() - start) < timeLimit:
+                                                                    if group1 == group:
+                                                                        if on_suffix(message1, 'ex'):
+                                                                            name = get_suffix(message1, 'ex')
+                                                                            index, responseText = musicScoreNormalEx.search(
+                                                                                name)
+                                                                            if int(index) == i:
+                                                                                responseText = buy_bread.BreadChallenge(
+                                                                                    user_id1, 10)
+                                                                                send_msg({'msg_type': 'group',
+                                                                                          'number': group,
+                                                                                          'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                break
+                                                                            else:
+                                                                                if num < 5:
+                                                                                    msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                    send_group(group, msg)
+                                                                                    num += 1
+                                                                                    continue
+                                                                                else:
+                                                                                    if k != 3:
+                                                                                        musicName, responseText = musicScoreNormalEx.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    elif k == 3:
+                                                                                        musicName, responseText = musicScoreNormalSp.get_musicName(
+                                                                                            r)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    break
+                                                                        elif on_suffix(message1, 'sp'):
+                                                                            name = get_suffix(message1, 'sp')
+                                                                            index, responseText = musicScoreNormalSp.search(
+                                                                                name)
+                                                                            if int(index) == r:
+                                                                                responseText = buy_bread.BreadChallenge(
+                                                                                    user_id1, 10)
+                                                                                send_msg({'msg_type': 'group',
+                                                                                          'number': group,
+                                                                                          'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                break
+                                                                            else:
+                                                                                if num < 5:
+                                                                                    msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                    send_group(group, msg)
+                                                                                    num += 1
+                                                                                    continue
+                                                                                else:
+                                                                                    if k != 3:
+                                                                                        musicName, responseText = musicScoreNormalEx.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    elif k == 3:
+                                                                                        musicName, responseText = musicScoreNormalSp.get_musicName(
+                                                                                            r)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                    break
+                                                                        elif on_fullmatch(message1, '放弃'):
                                                                             if k != 3:
                                                                                 musicName, responseText = musicScoreNormalEx.get_musicName(
                                                                                     i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
                                                                                     responseText)
                                                                                 send_group(group, msg)
                                                                             elif k == 3:
                                                                                 musicName, responseText = musicScoreNormalSp.get_musicName(
                                                                                     r)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
                                                                                     responseText)
                                                                                 send_group(group, msg)
                                                                             break
-                                                                elif on_suffix(message1, 'sp'):
-                                                                    name = get_suffix(message1, 'sp')
-                                                                    index, responseText = musicScoreNormalSp.search(
-                                                                        name)
-                                                                    if int(index) == r:
-                                                                        responseText = buy_bread.BreadChallenge(
-                                                                            user_id1, 5)
-                                                                        send_msg({'msg_type': 'group', 'number': group,
-                                                                                  'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                        break
-                                                                    else:
-                                                                        if num < 5:
-                                                                            msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                            send_group(group, msg)
-                                                                            num += 1
-                                                                            continue
                                                                         else:
-                                                                            if k != 3:
-                                                                                musicName, responseText = musicScoreNormalEx.get_musicName(
-                                                                                    i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
-                                                                                    responseText)
-                                                                                send_group(group, msg)
-                                                                            elif k == 3:
-                                                                                musicName, responseText = musicScoreNormalSp.get_musicName(
-                                                                                    r)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的sp难度'.format(
-                                                                                    responseText)
-                                                                                send_group(group, msg)
-                                                                            break
-                                                                elif on_fullmatch(message1, '放弃'):
-                                                                    if k != 3:
-                                                                        musicName, responseText = musicScoreNormalEx.get_musicName(
-                                                                            i)
-                                                                        msg = '已放弃, 这首歌的名字是{}的ex难度'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                    elif k == 3:
-                                                                        musicName, responseText = musicScoreNormalSp.get_musicName(
-                                                                            r)
-                                                                        msg = '已放弃, 这首歌的名字是{}的sp难度'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                    break
+                                                                            continue
+                                                                    else:
+                                                                        continue
                                                                 else:
-                                                                    continue
+                                                                    break
                                                             else:
-                                                                continue
+                                                                break
                                                         else:
                                                             break
                                                     else:
                                                         break
-                                                else:
-                                                    break
 
-                                        elif on_fullmatch(message1, 'easy'):
-                                            responseText = '这是这首歌的谱面哦'
-                                            i = random.randint(1, 52)
-                                            path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                'imageOnHtml', 'musicScoreEasy', '{}.png'.format(i))
-                                            msg = '选择难度easy: 将从所有27以上ex难度的歌里选取,记得歌的结尾要加ex或者sp哦\n' \
-                                                  ' 答对可以获得3份甜点哦\nps:没买过甜点不可以获得哦\n{}\n[CQ:image,file=file:///{}]'.format(
-                                                responseText, path)
-                                            send_group(group, msg)
-                                            while True:
-                                                try:
-                                                    rev1 = rev_msg()
-                                                    id1 = rev1['message_id']
-                                                    if (len(id_list) >= 50):
-                                                        id_list = []
-                                                    if id1 not in id_list:
-                                                        id_list.append(id1)
-                                                    else:
+                                            elif on_fullmatch(message1, 'easy'):
+                                                timeLimit = 2 * 60
+                                                start = time.time()
+                                                responseText = '这是这首歌的谱面哦'
+                                                i = random.randint(1, 52)
+                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                    'imageOnHtml', 'musicScoreEasy', '{}.png'.format(i))
+                                                msg = '选择难度easy: 将从所有27以上ex难度的歌里选取,记得歌的结尾要加ex或者sp哦\n' \
+                                                      ' 答对可以获得8份甜点哦\nps:没买过甜点不可以获得哦\n{}\n[CQ:image,file=file:///{}]'.format(
+                                                    responseText, path)
+                                                send_group(group, msg)
+                                                while True:
+                                                    try:
+                                                        rev1 = rev_msg()
+                                                        id1 = rev1['message_id']
+                                                        if (len(id_list) >= 50):
+                                                            id_list = []
+                                                        if id1 not in id_list:
+                                                            id_list.append(id1)
+                                                        else:
+                                                            continue
+                                                    except:
                                                         continue
-                                                except:
-                                                    continue
-                                                if rev1["post_type"] == "message":
-                                                    if rev1["message_type"] == "group":
-                                                        group1 = rev1['group_id']
-                                                        user_id1 = rev1['sender']['user_id']
-                                                        message1 = rev1['raw_message']
-                                                        if message1 in rev1["raw_message"]:
-                                                            if group1 == group:
-                                                                if on_suffix(message1, 'ex') or on_fullmatch(message1,
-                                                                                                             '放弃'):
-                                                                    if on_suffix(message1, 'ex'):
-                                                                        name = get_suffix(message1, 'ex')
-                                                                        index, responseText = musicScoreEasy.search(
-                                                                            name)
-                                                                        if int(index) == i:
-                                                                            responseText = buy_bread.BreadChallenge(
-                                                                                user_id1, 3)
-                                                                            send_msg(
-                                                                                {'msg_type': 'group', 'number': group,
-                                                                                 'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                 .format(user_id1, responseText)})
-                                                                            break
-                                                                        else:
-                                                                            if num < 5:
-                                                                                msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                                send_group(group, msg)
-                                                                                num += 1
-                                                                                continue
+                                                    if rev1["post_type"] == "message":
+                                                        if rev1["message_type"] == "group":
+                                                            group1 = rev1['group_id']
+                                                            user_id1 = rev1['sender']['user_id']
+                                                            message1 = rev1['raw_message']
+                                                            if message1 in rev1["raw_message"]:
+
+                                                                if (time.time() - start) < timeLimit:
+                                                                    if group1 == group:
+                                                                        if on_suffix(message1, 'ex') or on_fullmatch(
+                                                                                message1,
+                                                                                '放弃'):
+                                                                            if on_suffix(message1, 'ex'):
+                                                                                name = get_suffix(message1, 'ex')
+                                                                                index, responseText = musicScoreEasy.search(
+                                                                                    name)
+                                                                                if int(index) == i:
+                                                                                    responseText = buy_bread.BreadChallenge(
+                                                                                        user_id1, 8)
+                                                                                    send_msg(
+                                                                                        {'msg_type': 'group',
+                                                                                         'number': group,
+                                                                                         'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                    break
+                                                                                else:
+                                                                                    if num < 5:
+                                                                                        msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                        send_group(group, msg)
+                                                                                        num += 1
+                                                                                        continue
+                                                                                    else:
+                                                                                        musicName, responseText = musicScoreEasy.get_musicName(
+                                                                                            i)
+                                                                                        msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                            responseText)
+                                                                                        send_group(group, msg)
+                                                                                        break
+
                                                                             else:
                                                                                 musicName, responseText = musicScoreEasy.get_musicName(
                                                                                     i)
-                                                                                msg = '你已回答错误超过5次，挑战结束！这首歌的名字是{}的ex难度'.format(
-                                                                                    responseText)
+                                                                                msg = '已放弃, {}'.format(responseText)
                                                                                 send_group(group, msg)
                                                                                 break
 
+                                                                        else:
+                                                                            continue
                                                                     else:
-                                                                        musicName, responseText = musicScoreEasy.get_musicName(
-                                                                            i)
-                                                                        msg = '已放弃, {}'.format(responseText)
-                                                                        send_group(group, msg)
-                                                                        break
-
+                                                                        continue
                                                                 else:
-                                                                    continue
-
+                                                                    break
                                                             else:
-                                                                continue
+                                                                break
                                                         else:
                                                             break
                                                     else:
                                                         break
+
+                                            elif on_fullmatch(message1, 'special'):
+                                                timeLimit = 2 * 60
+                                                start = time.time()
+                                                responseText = '这是这首歌的谱面哦'
+                                                i = random.randint(1, 415)
+                                                r = random.randint(1, 85)
+                                                k = random.randint(0, 3)
+                                                x = 0
+                                                n = 1
+                                                option = ['A', 'B', 'C', 'D', 'E']
+                                                answer = []
+                                                if k != 3:
+                                                    musicName, text = musicScore.get_musicName(i)
+                                                    answer.append(musicName)
+                                                    while x < 4:
+                                                        m = random.randint(1, 414)
+                                                        musicName, text = musicScore.get_musicName(m)
+                                                        answer.append(musicName)
+                                                        x += 1
                                                 else:
-                                                    break
-
-                                        elif on_fullmatch(message1, 'special'):
-                                            responseText = '这是这首歌的谱面哦'
-                                            i = random.randint(1, 415)
-                                            r = random.randint(1, 85)
-                                            k = random.randint(0, 3)
-                                            x = 0
-                                            n = 1
-                                            option = ['A', 'B', 'C', 'D', 'E']
-                                            answer = []
-                                            if k != 3:
-                                                musicName, text = musicScore.get_musicName(i)
-                                                answer.append(musicName)
-                                                while x < 4:
-                                                    m = random.randint(1, 415)
-                                                    musicName, text = musicScore.get_musicName(m)
+                                                    musicName, text = musicScoreSp.get_musicName(r)
                                                     answer.append(musicName)
-                                                    x += 1
-                                            else:
-                                                musicName, text = musicScoreSp.get_musicName(r)
-                                                answer.append(musicName)
-                                                while x < 4:
-                                                    m = random.randint(1, 85)
-                                                    musicName, text = musicScoreSp.get_musicName(m)
-                                                    answer.append(musicName)
-                                                    x += 1
-                                            random.shuffle(answer)
+                                                    while x < 4:
+                                                        m = random.randint(1, 85)
+                                                        musicName, text = musicScoreSp.get_musicName(m)
+                                                        answer.append(musicName)
+                                                        x += 1
+                                                random.shuffle(answer)
 
-                                            if k != 3:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScore', '{}.png'.format(i))
-                                                msg = '选择难度special: 将从所有歌曲里选择并给出选项进行选择, 答对可以获得5份甜点哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}, 为ex难度,记得选项前加答案两个字哦\n[CQ:image,file=file:///{}]\n\n' \
-                                                      '{} {}\n{} {}\n{} {}\n{} {}\n{} {}\n'.format(responseText, path,
-                                                                                                   option[0], answer[0],
-                                                                                                   option[1], answer[1],
-                                                                                                   option[2], answer[2],
-                                                                                                   option[3], answer[3],
-                                                                                                   option[4], answer[4])
-                                                send_group(group, msg)
-                                            else:
-                                                path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                                    'imageOnHtml', 'musicScoreSp', '{}.png'.format(r))
-                                                msg = '选择难度special: 将从所有歌曲里选择并给出选项进行选择, 答对可以获得5份甜点哦\n' \
-                                                      'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]\n\n' \
-                                                      '{} {}\n{} {}\n{} {}\n{} {}\n{} {}\n'.format(responseText, path,
-                                                                                                   option[0], answer[0],
-                                                                                                   option[1], answer[1],
-                                                                                                   option[2], answer[2],
-                                                                                                   option[3], answer[3],
-                                                                                                   option[4], answer[4])
-                                                send_group(group, msg)
-                                            while True:
-                                                try:
-                                                    rev1 = rev_msg()
-                                                    id1 = rev1['message_id']
-                                                    if (len(id_list) >= 50):
-                                                        id_list = []
-                                                    if id1 not in id_list:
-                                                        id_list.append(id1)
-                                                    else:
+                                                if k != 3:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScore', '{}.png'.format(i))
+                                                    msg = '选择难度special: 将从所有歌曲里选择并给出选项进行选择, 答对可以获得10份甜点哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}, 为ex难度,记得选项前加答案两个字哦\n[CQ:image,file=file:///{}]\n\n' \
+                                                          '{} {}\n{} {}\n{} {}\n{} {}\n{} {}\n'.format(responseText,
+                                                                                                       path,
+                                                                                                       option[0],
+                                                                                                       answer[0],
+                                                                                                       option[1],
+                                                                                                       answer[1],
+                                                                                                       option[2],
+                                                                                                       answer[2],
+                                                                                                       option[3],
+                                                                                                       answer[3],
+                                                                                                       option[4],
+                                                                                                       answer[4])
+                                                    send_group(group, msg)
+                                                else:
+                                                    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                                                        'imageOnHtml', 'musicScoreSp',
+                                                                        '{}.png'.format(r))
+                                                    msg = '选择难度special: 将从所有歌曲里选择并给出选项进行选择, 答对可以获得10份甜点哦\n' \
+                                                          'ps:没买过甜点不可以获得哦\n{}，为sp难度\n[CQ:image,file=file:///{}]\n\n' \
+                                                          '{} {}\n{} {}\n{} {}\n{} {}\n{} {}\n'.format(responseText,
+                                                                                                       path,
+                                                                                                       option[0],
+                                                                                                       answer[0],
+                                                                                                       option[1],
+                                                                                                       answer[1],
+                                                                                                       option[2],
+                                                                                                       answer[2],
+                                                                                                       option[3],
+                                                                                                       answer[3],
+                                                                                                       option[4],
+                                                                                                       answer[4])
+                                                    send_group(group, msg)
+                                                while True:
+                                                    try:
+                                                        rev1 = rev_msg()
+                                                        id1 = rev1['message_id']
+                                                        if (len(id_list) >= 50):
+                                                            id_list = []
+                                                        if id1 not in id_list:
+                                                            id_list.append(id1)
+                                                        else:
+                                                            continue
+                                                    except:
                                                         continue
-                                                except:
-                                                    continue
-                                                if rev1["post_type"] == "message":
-                                                    if rev1["message_type"] == "group":
-                                                        group1 = rev1['group_id']
-                                                        user_id1 = rev1['sender']['user_id']
-                                                        message1 = rev1['raw_message']
-                                                        if message1 in rev1["raw_message"]:
-                                                            if group1 == group:
-                                                                if k != 3:
-                                                                    if on_prefix(message1, '答案'):
-                                                                        name = get_prefix(message1, '答案')
-                                                                        name = name.upper()
-                                                                        print(name)
-                                                                        number = 5
-                                                                        musicName, text = musicScore.get_musicName(i)
-                                                                        for num in range(0, 4):
-                                                                            if name == option[num]:
-                                                                                number = num
-                                                                                break
-                                                                            else:
-                                                                                num += 1
-                                                                        print(num)
-                                                                        if number != 5 and musicName == answer[number]:
-                                                                            print(answer[number])
-                                                                            responseText = buy_bread.BreadChallenge(
-                                                                                user_id1, 5)
-                                                                            send_msg(
-                                                                                {'msg_type': 'group', 'number': group,
-                                                                                 'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                .format(user_id1, responseText)})
-                                                                            break
-                                                                        else:
-                                                                            if n < 3:
-                                                                                msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                                send_group(group, msg)
-                                                                                n += 1
-                                                                                continue
-                                                                            else:
+                                                    if rev1["post_type"] == "message":
+                                                        if rev1["message_type"] == "group":
+                                                            group1 = rev1['group_id']
+                                                            user_id1 = rev1['sender']['user_id']
+                                                            message1 = rev1['raw_message']
+                                                            if message1 in rev1["raw_message"]:
+
+                                                                if (time.time() - start) < timeLimit:
+                                                                    if group1 == group:
+                                                                        if k != 3:
+                                                                            if on_prefix(message1, '答案'):
+                                                                                name = get_prefix(message1, '答案')
+                                                                                name = name.upper()
+                                                                                print(name)
+                                                                                number = 5
+                                                                                musicName, text = musicScore.get_musicName(
+                                                                                    i)
+                                                                                for num in range(0, 5):
+                                                                                    if name == option[num]:
+                                                                                        number = num
+                                                                                        break
+                                                                                    else:
+                                                                                        num += 1
+                                                                                print(number)
+                                                                                if number != 5 and musicName == answer[
+                                                                                    number]:
+                                                                                    print(answer[number])
+                                                                                    responseText = buy_bread.BreadChallenge(
+                                                                                        user_id1, 10)
+                                                                                    send_msg(
+                                                                                        {'msg_type': 'group',
+                                                                                         'number': group,
+                                                                                         'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                    break
+                                                                                else:
+                                                                                    if n < 3:
+                                                                                        msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                        send_group(group, msg)
+                                                                                        n += 1
+                                                                                        continue
+                                                                                    else:
+                                                                                        if k != 3:
+                                                                                            musicName, responseText = musicScore.get_musicName(
+                                                                                                i)
+                                                                                            msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                                responseText)
+                                                                                            send_group(group, msg)
+                                                                                        elif k == 3:
+                                                                                            musicName, responseText = musicScoreSp.get_musicName(
+                                                                                                r)
+                                                                                            msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                                responseText)
+                                                                                            send_group(group, msg)
+                                                                                        break
+                                                                            elif on_fullmatch(message1, '放弃'):
                                                                                 if k != 3:
                                                                                     musicName, responseText = musicScore.get_musicName(
                                                                                         i)
-                                                                                    msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                    msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
                                                                                         responseText)
                                                                                     send_group(group, msg)
                                                                                 elif k == 3:
                                                                                     musicName, responseText = musicScoreSp.get_musicName(
                                                                                         r)
-                                                                                    msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                    msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
                                                                                         responseText)
                                                                                     send_group(group, msg)
                                                                                 break
-                                                                    elif on_fullmatch(message1, '放弃'):
-                                                                        if k != 3:
-                                                                            musicName, responseText = musicScore.get_musicName(
-                                                                                i)
-                                                                            msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
-                                                                                responseText)
-                                                                            send_group(group, msg)
-                                                                        elif k == 3:
-                                                                            musicName, responseText = musicScoreSp.get_musicName(
-                                                                                r)
-                                                                            msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
-                                                                                responseText)
-                                                                            send_group(group, msg)
-                                                                        break
-                                                                    else:
-                                                                        continue
-
-                                                                if k == 3:
-                                                                    if on_prefix(message1, '答案'):
-                                                                        name = get_prefix(message1, '答案')
-                                                                        name = name.upper()
-                                                                        print(name)
-                                                                        number = 5
-                                                                        musicName, text = musicScoreSp.get_musicName(r)
-                                                                        for num in range(0, 4):
-                                                                            if name == option[num]:
-                                                                                number = num
-                                                                                break
                                                                             else:
-                                                                                num += 1
-                                                                        print(num)
-
-                                                                        if number != 5 and musicName == answer[number]:
-                                                                            print(answer[number])
-                                                                            responseText = buy_bread.BreadChallenge(
-                                                                                user_id1, 5)
-                                                                            send_msg(
-                                                                                {'msg_type': 'group', 'number': group,
-                                                                                 'msg': '[CQ:at,qq={}]回答正确！ {}'
-                                                                                .format(user_id1, responseText)})
-                                                                            break
-                                                                        else:
-                                                                            if n < 3:
-                                                                                msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
-                                                                                send_group(group, msg)
-                                                                                n += 1
                                                                                 continue
-                                                                            else:
+
+                                                                        if k == 3:
+                                                                            if on_prefix(message1, '答案'):
+                                                                                name = get_prefix(message1, '答案')
+                                                                                name = name.upper()
+                                                                                print(name)
+                                                                                number = 5
+                                                                                musicName, text = musicScoreSp.get_musicName(
+                                                                                    r)
+                                                                                for num in range(0, 5):
+                                                                                    if name == option[num]:
+                                                                                        number = num
+                                                                                        break
+                                                                                    else:
+                                                                                        num += 1
+                                                                                print(num)
+
+                                                                                if number != 5 and musicName == answer[
+                                                                                    number]:
+                                                                                    print(answer[number])
+                                                                                    responseText = buy_bread.BreadChallenge(
+                                                                                        user_id1, 10)
+                                                                                    send_msg(
+                                                                                        {'msg_type': 'group',
+                                                                                         'number': group,
+                                                                                         'msg': '[CQ:at,qq={}]回答正确！ {}'
+                                                                                         .format(user_id1,
+                                                                                                 responseText)})
+                                                                                    break
+                                                                                else:
+                                                                                    if n < 3:
+                                                                                        msg = '回答错误（如果不知道答案的话，可以输入放弃哦）'
+                                                                                        send_group(group, msg)
+                                                                                        n += 1
+                                                                                        continue
+                                                                                    else:
+                                                                                        if k != 3:
+                                                                                            musicName, responseText = musicScore.get_musicName(
+                                                                                                i)
+                                                                                            msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                                responseText)
+                                                                                            send_group(group, msg)
+                                                                                        elif k == 3:
+                                                                                            musicName, responseText = musicScoreSp.get_musicName(
+                                                                                                r)
+                                                                                            msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                                responseText)
+                                                                                            send_group(group, msg)
+                                                                                        break
+
+                                                                            elif on_fullmatch(message1, '放弃'):
                                                                                 if k != 3:
                                                                                     musicName, responseText = musicScore.get_musicName(
                                                                                         i)
-                                                                                    msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的ex难度'.format(
+                                                                                    msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
                                                                                         responseText)
                                                                                     send_group(group, msg)
                                                                                 elif k == 3:
                                                                                     musicName, responseText = musicScoreSp.get_musicName(
                                                                                         r)
-                                                                                    msg = '你已回答错误超过3次，挑战结束！这首歌的名字是{}的sp难度'.format(
+                                                                                    msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
                                                                                         responseText)
                                                                                     send_group(group, msg)
                                                                                 break
-
-                                                                    elif on_fullmatch(message1, '放弃'):
-                                                                        if k != 3:
-                                                                            musicName, responseText = musicScore.get_musicName(
-                                                                                i)
-                                                                            msg = '已放弃, 这首歌的名字是{}的ex难度'.format(
-                                                                                responseText)
-                                                                            send_group(group, msg)
-                                                                        elif k == 3:
-                                                                            musicName, responseText = musicScoreSp.get_musicName(
-                                                                                r)
-                                                                            msg = '已放弃, 这首歌的名字是{}的sp难度'.format(
-                                                                                responseText)
-                                                                            send_group(group, msg)
-                                                                        break
+                                                                            else:
+                                                                                continue
+                                                                        else:
+                                                                            continue
                                                                     else:
                                                                         continue
                                                                 else:
-                                                                    continue
+                                                                    break
                                                             else:
-                                                                continue
+                                                                break
                                                         else:
                                                             break
                                                     else:
                                                         break
-                                                else:
-                                                    break
 
+                                            else:
+                                                continue
                                         else:
                                             continue
                                     else:
-                                        continue
+                                        break
                                 else:
                                     break
                             else:
                                 break
-                        else:
                             break
-                        break
+                    else:
+                        responseText = buy_bread.eatBreadImage(user_id)
+                        msg = '[CQ:at,qq={}] {}'.format(user_id, responseText)
+                        send_group(group, msg)
 
         else:
             continue
